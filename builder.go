@@ -8,7 +8,7 @@ import (
 type SQLBuilder struct {
 	dialect string
 	sql *sql.DB
-	statement string
+	Statement string
 }
 
 type Builder interface {
@@ -19,12 +19,12 @@ type Builder interface {
 }
 
 func (b *SQLBuilder) Table(table string) Builder {
-	b.statement += " FROM " + table
+	b.Statement += " FROM " + table
 	return b
 }
 
 func (b *SQLBuilder) Select(cols []string) Builder {
-	b.statement += "SELECT " + strings.Join(cols, ", ")
+	b.Statement += "SELECT " + strings.Join(cols, ", ")
 	return b
 }
 
