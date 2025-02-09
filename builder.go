@@ -16,6 +16,7 @@ type Builder interface {
 	Select(cols []string) Builder
 	Where() Builder
 	WhereIn() Builder
+	GetSql() string
 }
 
 func (b *SQLBuilder) Table(table string) Builder {
@@ -26,6 +27,10 @@ func (b *SQLBuilder) Table(table string) Builder {
 func (b *SQLBuilder) Select(cols []string) Builder {
 	b.Statement += "SELECT " + strings.Join(cols, ", ")
 	return b
+}
+
+func (b *SQLBuilder) GetSql() string {
+	return b.Statement
 }
 
 func (b *SQLBuilder) Where() Builder {
