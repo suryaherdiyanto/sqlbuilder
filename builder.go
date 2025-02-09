@@ -41,6 +41,6 @@ func (b *SQLBuilder) WhereIn() Builder {
 	return b
 }
 
-func NewSQLBuilder(dialect string, sql *sql.DB) Builder {
+func NewSQLBuilder(dialect string, sql *sql.DB) *SQLBuilder {
 	return &SQLBuilder{dialect: dialect, sql: sql}
 }
