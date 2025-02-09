@@ -10,7 +10,12 @@ import (
 
 func TestBuilder(t *testing.T) {
 	db, _ := sql.Open("sqlite3", ":memory:")
+
 	builder := NewSQLBuilder("sqlite", db)
 
-	builder.Table("users").Select([]string{"*"})
+	builder.Select([]string{"*"}).Table("users")
+
+	if builder.GetSql() != "SELECT * FROM users" {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
 }
