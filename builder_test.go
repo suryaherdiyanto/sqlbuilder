@@ -28,7 +28,7 @@ func TestWithWhere(t *testing.T) {
 	builder.
 		Select([]string{"*"}).
 		Table("users").
-		Where("email", "=", "johndoe@gmail.com")
+		Where("email", Eq, "johndoe@gmail.com")
 
 	if builder.GetSql() != "SELECT * FROM users WHERE email = 'johndoe@gmail.com'" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
@@ -43,8 +43,8 @@ func TestWithMultipleWhere(t *testing.T) {
 	builder.
 		Select([]string{"*"}).
 		Table("users").
-		Where("email", "=", "johndoe@gmail.com").
-		Where("access_role", "<", 3)
+		Where("email", Eq, "johndoe@gmail.com").
+		Where("access_role", Lt, 3)
 
 	if builder.GetSql() != "SELECT * FROM users WHERE email = 'johndoe@gmail.com' AND access_role < 3" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
