@@ -61,7 +61,12 @@ func (b *SQLBuilder) Where(column string, op string, val interface{}) Builder {
 }
 
 func (b *SQLBuilder) WhereIn(column string, d []string) Builder {
-	b.Statement += fmt.Sprintf(" WHERE %s in(%s)", column, strings.Join(d, ","))
+	clause := "WHERE"
+	if hasWhere(b.Statement) {
+		clause = "AND"
+	}
+
+	b.Statement += fmt.Sprintf(" %s %s in(%s)", clause, column, strings.Join(d, ","))
 	return b
 }
 
