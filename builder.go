@@ -26,6 +26,7 @@ type Builder interface {
 	Select(cols []string) Builder
 	Where(column string, op string, val interface{}) Builder
 	WhereIn(column string, d interface{}) Builder
+	WhereBetween(column string, start interface{}, end interface{}) Builder
 	GetSql() string
 }
 
@@ -93,6 +94,17 @@ func (b *SQLBuilder) WhereIn(column string, values interface{}) Builder {
 
 
 	b.Statement += fmt.Sprintf(" %s %s IN(%s)", clause, column, inValues)
+	return b
+}
+
+func (b *SQLBuilder) WhereBetween(column string, start interface{}, end interface{}) Builder {
+	clause := "WHERE"
+
+	if hasWhere(b.Statement) {
+		clause = "AND"
+	}
+
+	b.Statement = fmt.Sprintf(" %s %s BETWEEN %v AND %v", clause, column, start, end)
 	return b
 }
 

@@ -80,3 +80,18 @@ func TestWhereInWithNumber(t *testing.T) {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 }
+
+func TestWhereBetween(t *testing.T) {
+	db, _ := sql.Open("sqlite3", ":memory:")
+
+	builder := NewSQLBuilder("sqlite", db)
+
+	builder.
+		Select([]string{"*"}).
+		Table("users").
+		WhereBetween("age", 5, 10)
+
+	if builder.GetSql() != "" {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+}
