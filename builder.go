@@ -2,6 +2,7 @@ package sqlbuilder
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 )
 
@@ -14,8 +15,8 @@ type SQLBuilder struct {
 type Builder interface {
 	Table(table string) Builder
 	Select(cols []string) Builder
-	Where() Builder
-	WhereIn() Builder
+	Where(column string, op string, val interface{}) Builder
+	WhereIn(column string, d []string) Builder
 	GetSql() string
 }
 
@@ -33,11 +34,13 @@ func (b *SQLBuilder) GetSql() string {
 	return b.Statement
 }
 
-func (b *SQLBuilder) Where() Builder {
+func (b *SQLBuilder) Where(column string, op string, val interface{}) Builder {
+	b.Statement += fmt.Sprintf(" WHERE %s %s '%v'", column, op, val)
 	return b
 }
 
-func (b *SQLBuilder) WhereIn() Builder {
+func (b *SQLBuilder) WhereIn(column string, d []string) Builder {
+	b.Statement += fmt.Sprintf(" WHERE %s in(%s)", column, strings.Join(d, ","))
 	return b
 }
 
