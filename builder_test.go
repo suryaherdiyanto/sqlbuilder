@@ -91,7 +91,7 @@ func TestWhereBetween(t *testing.T) {
 		Table("users").
 		WhereBetween("age", 5, 10)
 
-	if builder.GetSql() != "" {
+	if builder.GetSql() != "SELECT * FROM users WHERE age BETWEEN 5 AND 10" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 }
