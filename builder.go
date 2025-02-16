@@ -7,6 +7,14 @@ import (
 	"strings"
 )
 
+const (
+	Eq = "="
+	Lte = "<="
+	Lt = "<"
+	Gte = ">="
+	Gt= ">"
+)
+
 type SQLBuilder struct {
 	dialect string
 	sql *sql.DB
