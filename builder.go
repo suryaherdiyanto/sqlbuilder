@@ -30,9 +30,12 @@ type SQLBuilder struct {
 type Builder interface {
 	Table(table string) Builder
 	Select(cols []string) Builder
-	Where(column string, op string, val interface{}) Builder
+	Where(column string, comp string, val interface{}) Builder
 	WhereIn(column string, d interface{}) Builder
 	WhereBetween(column string, start interface{}, end interface{}) Builder
+	OrWhere(column string, comp string, val interface{}) Builder
+	OrWhereIn(column string, d interface{}) Builder
+	OrWhereBetween(column string, start interface{}, end interface{}) Builder
 	GetSql() string
 }
 
@@ -114,13 +117,26 @@ func (b *SQLBuilder) Where(column string, comp string, val interface{}) Builder 
 	return b.buildWhere(column, comp, val)
 }
 
+func (b *SQLBuilder) OrWhere(column string, comp string, val interface{}) Builder {
+	b.setWhereOperator(whereOr)
+	return b.buildWhere(column, comp, val)
+}
+
 func (b *SQLBuilder) WhereIn(column string, values interface{}) Builder {
 	b.setWhereOperator(whereAnd)
+	return b.buildWhereIn(column, values)
+}
+func (b *SQLBuilder) OrWhereIn(column string, values interface{}) Builder {
+	b.setWhereOperator(whereOr)
 	return b.buildWhereIn(column, values)
 }
 
 func (b *SQLBuilder) WhereBetween(column string, start interface{}, end interface{}) Builder {
 	b.setWhereOperator(whereAnd)
+	return b.buildWhereBetween(column, start, end)
+}
+func (b *SQLBuilder) OrWhereBetween(column string, start interface{}, end interface{}) Builder {
+	b.setWhereOperator(whereOr)
 	return b.buildWhereBetween(column, start, end)
 }
 
