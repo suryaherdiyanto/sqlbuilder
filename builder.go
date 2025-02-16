@@ -50,10 +50,8 @@ func (b *SQLBuilder) GetSql() string {
 	return b.Statement
 }
 
-func (b *SQLBuilder) Where(column string, comp string, val interface{}) Builder {
+func (b *SQLBuilder) buildWhere(column string, comp string, val interface{}) Builder {
 	valueBind := "%v"
-
-	b.setWhereOperator(whereAnd)
 
 	t := reflect.ValueOf(val)
 	if t.Kind() == reflect.String {
@@ -64,10 +62,8 @@ func (b *SQLBuilder) Where(column string, comp string, val interface{}) Builder 
 	return b
 }
 
-func (b *SQLBuilder) WhereIn(column string, values interface{}) Builder {
+func (b *SQLBuilder) buildWhereIn(column string, values interface{}) Builder {
 	var inValues string
-
-	b.setWhereOperator(whereAnd)
 
 	ref := reflect.ValueOf(values)
 	if ref.Kind() != reflect.Slice {
@@ -97,10 +93,7 @@ func (b *SQLBuilder) WhereIn(column string, values interface{}) Builder {
 	return b
 }
 
-func (b *SQLBuilder) WhereBetween(column string, start interface{}, end interface{}) Builder {
-
-	b.setWhereOperator(whereAnd)
-
+func (b *SQLBuilder) buildWhereBetween(column string, start interface{}, end interface{}) Builder {
 	startRef := reflect.ValueOf(start)
 	endRef := reflect.ValueOf(end)
 
@@ -114,6 +107,21 @@ func (b *SQLBuilder) WhereBetween(column string, start interface{}, end interfac
 
 	b.Statement += fmt.Sprintf(" %s BETWEEN %v AND %v", column, start, end)
 	return b
+}
+
+func (b *SQLBuilder) Where(column string, comp string, val interface{}) Builder {
+	b.setWhereOperator(whereAnd)
+	return b.buildWhere(column, comp, val)
+}
+
+func (b *SQLBuilder) WhereIn(column string, values interface{}) Builder {
+	b.setWhereOperator(whereAnd)
+	return b.buildWhereIn(column, values)
+}
+
+func (b *SQLBuilder) WhereBetween(column string, start interface{}, end interface{}) Builder {
+	b.setWhereOperator(whereAnd)
+	return b.buildWhereBetween(column, start, end)
 }
 
 func (b *SQLBuilder) setWhereOperator(op string) {
