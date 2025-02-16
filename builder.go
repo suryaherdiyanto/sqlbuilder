@@ -3,6 +3,7 @@ package sqlbuilder
 import (
 	"database/sql"
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -35,7 +36,19 @@ func (b *SQLBuilder) GetSql() string {
 }
 
 func (b *SQLBuilder) Where(column string, op string, val interface{}) Builder {
-	b.Statement += fmt.Sprintf(" WHERE %s %s '%v'", column, op, val)
+	clause := "WHERE"
+	valueBind := "%v"
+
+	if hasWhere(b.Statement) {
+		clause = "AND"
+	}
+
+	t := reflect.ValueOf(val)
+	if t.Kind() == reflect.String {
+		valueBind = "'%v'"
+	}
+
+	b.Statement += fmt.Sprintf(" %s %s %s " + valueBind, clause, column, op, val)
 	return b
 }
 
@@ -46,4 +59,8 @@ func (b *SQLBuilder) WhereIn(column string, d []string) Builder {
 
 func NewSQLBuilder(dialect string, sql *sql.DB) *SQLBuilder {
 	return &SQLBuilder{dialect: dialect, sql: sql}
+}
+
+func hasWhere(statement string) bool {
+	return strings.Contains(statement, "WHERE")
 }
