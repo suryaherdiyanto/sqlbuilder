@@ -104,7 +104,7 @@ func (b *SQLBuilder) WhereBetween(column string, start interface{}, end interfac
 		clause = "AND"
 	}
 
-	b.Statement = fmt.Sprintf(" %s %s BETWEEN %v AND %v", clause, column, start, end)
+	b.Statement += fmt.Sprintf(" %s %s BETWEEN %v AND %v", clause, column, start, end)
 	return b
 }
 
