@@ -15,9 +15,15 @@ const (
 	Gt= ">"
 )
 
+const (
+	whereOr = "OR"
+	whereAnd = "AND"
+)
+
 type SQLBuilder struct {
 	dialect string
 	sql *sql.DB
+	hasWhere bool
 	Statement string
 }
 
@@ -45,29 +51,23 @@ func (b *SQLBuilder) GetSql() string {
 }
 
 func (b *SQLBuilder) Where(column string, op string, val interface{}) Builder {
-	clause := "WHERE"
 	valueBind := "%v"
 
-	if hasWhere(b.Statement) {
-		clause = "AND"
-	}
+	b.setWhereOperator(whereAnd)
 
 	t := reflect.ValueOf(val)
 	if t.Kind() == reflect.String {
 		valueBind = "'%v'"
 	}
 
-	b.Statement += fmt.Sprintf(" %s %s %s " + valueBind, clause, column, op, val)
+	b.Statement += fmt.Sprintf(" %s %s " + valueBind, column, op, val)
 	return b
 }
 
 func (b *SQLBuilder) WhereIn(column string, values interface{}) Builder {
-	clause := "WHERE"
 	var inValues string
 
-	if hasWhere(b.Statement) {
-		clause = "AND"
-	}
+	b.setWhereOperator(whereAnd)
 
 	ref := reflect.ValueOf(values)
 	if ref.Kind() != reflect.Slice {
@@ -93,16 +93,14 @@ func (b *SQLBuilder) WhereIn(column string, values interface{}) Builder {
 	}
 
 
-	b.Statement += fmt.Sprintf(" %s %s IN(%s)", clause, column, inValues)
+	b.Statement += fmt.Sprintf(" %s IN(%s)", column, inValues)
 	return b
 }
 
 func (b *SQLBuilder) WhereBetween(column string, start interface{}, end interface{}) Builder {
-	clause := "WHERE"
 
-	if hasWhere(b.Statement) {
-		clause = "AND"
-	}
+	b.setWhereOperator(whereAnd)
+
 	startRef := reflect.ValueOf(start)
 	endRef := reflect.ValueOf(end)
 
@@ -114,14 +112,29 @@ func (b *SQLBuilder) WhereBetween(column string, start interface{}, end interfac
 		end = fmt.Sprintf("'%s'", endRef.Interface())
 	}
 
-	b.Statement += fmt.Sprintf(" %s %s BETWEEN %v AND %v", clause, column, start, end)
+	b.Statement += fmt.Sprintf(" %s BETWEEN %v AND %v", column, start, end)
 	return b
+}
+
+func (b *SQLBuilder) setWhereOperator(op string) {
+	if !b.HasWhere() {
+		b.Statement += " WHERE"
+	}
+
+	if b.HasWhere() {
+		b.Statement += fmt.Sprintf(" %s", op)
+	}
+
+	if strings.Contains(b.Statement, "WHERE") {
+		b.hasWhere = true
+	}
 }
 
 func NewSQLBuilder(dialect string, sql *sql.DB) *SQLBuilder {
 	return &SQLBuilder{dialect: dialect, sql: sql}
 }
 
-func hasWhere(statement string) bool {
-	return strings.Contains(statement, "WHERE")
+func (b *SQLBuilder) HasWhere() bool {
+	return b.hasWhere
 }
+
