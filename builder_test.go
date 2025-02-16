@@ -50,3 +50,33 @@ func TestWithMultipleWhere(t *testing.T) {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 }
+
+func TestWhereIn(t *testing.T) {
+	db, _ := sql.Open("sqlite3", ":memory:")
+
+	builder := NewSQLBuilder("sqlite", db)
+
+	builder.
+		Select([]string{"*"}).
+		Table("users").
+		WhereIn("email", []string{"john@gmail.com", "admin@example.com"})
+
+	if builder.GetSql() != "SELECT * FROM users WHERE email IN('john@gmail.com', 'admin@example.com')" {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+}
+
+func TestWhereInWithNumber(t *testing.T) {
+	db, _ := sql.Open("sqlite3", ":memory:")
+
+	builder := NewSQLBuilder("sqlite", db)
+
+	builder.
+		Select([]string{"*"}).
+		Table("users").
+		WhereIn("some_column", []int{1, 2, 3})
+
+	if builder.GetSql() != "SELECT * FROM users WHERE some_column IN(1, 2, 3)" {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+}
