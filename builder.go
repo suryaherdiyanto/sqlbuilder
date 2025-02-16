@@ -103,6 +103,16 @@ func (b *SQLBuilder) WhereBetween(column string, start interface{}, end interfac
 	if hasWhere(b.Statement) {
 		clause = "AND"
 	}
+	startRef := reflect.ValueOf(start)
+	endRef := reflect.ValueOf(end)
+
+	if startRef.Kind() == reflect.String {
+		start = fmt.Sprintf("'%s'", startRef.Interface())
+	}
+
+	if endRef.Kind() == reflect.String {
+		end = fmt.Sprintf("'%s'", endRef.Interface())
+	}
 
 	b.Statement += fmt.Sprintf(" %s %s BETWEEN %v AND %v", clause, column, start, end)
 	return b
