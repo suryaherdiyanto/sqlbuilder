@@ -50,7 +50,7 @@ func (b *SQLBuilder) GetSql() string {
 	return b.Statement
 }
 
-func (b *SQLBuilder) Where(column string, op string, val interface{}) Builder {
+func (b *SQLBuilder) Where(column string, comp string, val interface{}) Builder {
 	valueBind := "%v"
 
 	b.setWhereOperator(whereAnd)
@@ -60,7 +60,7 @@ func (b *SQLBuilder) Where(column string, op string, val interface{}) Builder {
 		valueBind = "'%v'"
 	}
 
-	b.Statement += fmt.Sprintf(" %s %s " + valueBind, column, op, val)
+	b.Statement += fmt.Sprintf(" %s %s " + valueBind, column, comp, val)
 	return b
 }
 
