@@ -94,4 +94,14 @@ func TestWhereBetween(t *testing.T) {
 	if builder.GetSql() != "SELECT * FROM users WHERE age BETWEEN 5 AND 10" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
+
+	builder = NewSQLBuilder("sqlite", db)
+	builder.
+		Select([]string{"*"}).
+		Table("users").
+		WhereBetween("dob", "1995-02-01", "2000-01-01")
+
+	if builder.GetSql() != "SELECT * FROM users WHERE dob BETWEEN '1995-02-01' AND '2000-01-01'" {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
 }
