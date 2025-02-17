@@ -24,6 +24,7 @@ type SQLBuilder struct {
 	dialect string
 	sql *sql.DB
 	hasWhere bool
+	arguments []interface{}
 	Statement string
 }
 
@@ -54,14 +55,9 @@ func (b *SQLBuilder) GetSql() string {
 }
 
 func (b *SQLBuilder) buildWhere(column string, comp string, val interface{}) Builder {
-	valueBind := "%v"
+	b.Statement += fmt.Sprintf(" %s %s ?", column, comp)
+	b.arguments = append(b.arguments, val)
 
-	t := reflect.ValueOf(val)
-	if t.Kind() == reflect.String {
-		valueBind = "'%v'"
-	}
-
-	b.Statement += fmt.Sprintf(" %s %s " + valueBind, column, comp, val)
 	return b
 }
 
@@ -75,22 +71,17 @@ func (b *SQLBuilder) buildWhereIn(column string, values interface{}) Builder {
 	lenValues := ref.Len()
 
 	for i := 0; i < lenValues; i++ {
-		vRef := ref.Index(i)
 		val := ref.Index(i).Interface()
 
-		con := fmt.Sprintf("%v", val)
-
-		if vRef.Kind() == reflect.String {
-			con = fmt.Sprintf("'%s'", val)
-		}
+		con := "?"
 
 		if i < (lenValues - 1) {
 			con += ", "
 		}
 
 		inValues += con
+		b.arguments = append(b.arguments, val)
 	}
-
 
 	b.Statement += fmt.Sprintf(" %s IN(%s)", column, inValues)
 	return b
@@ -108,7 +99,9 @@ func (b *SQLBuilder) buildWhereBetween(column string, start interface{}, end int
 		end = fmt.Sprintf("'%s'", endRef.Interface())
 	}
 
-	b.Statement += fmt.Sprintf(" %s BETWEEN %v AND %v", column, start, end)
+	b.Statement += fmt.Sprintf(" %s BETWEEN ? AND ?", column)
+	b.arguments = append(b.arguments, start)
+	b.arguments = append(b.arguments, end)
 	return b
 }
 
