@@ -7,10 +7,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+var db, _ = sql.Open("sqlite3", ":memory:")
 
 func TestBuilder(t *testing.T) {
-	db, _ := sql.Open("sqlite3", ":memory:")
-
 	builder := NewSQLBuilder("sqlite", db)
 
 	builder.Select([]string{"*"}).Table("users")
@@ -21,8 +20,6 @@ func TestBuilder(t *testing.T) {
 }
 
 func TestWithWhere(t *testing.T) {
-	db, _ := sql.Open("sqlite3", ":memory:")
-
 	builder := NewSQLBuilder("sqlite", db)
 
 	builder.
@@ -36,8 +33,6 @@ func TestWithWhere(t *testing.T) {
 }
 
 func TestWithMultipleWhere(t *testing.T) {
-	db, _ := sql.Open("sqlite3", ":memory:")
-
 	builder := NewSQLBuilder("sqlite", db)
 
 	builder.
@@ -52,8 +47,6 @@ func TestWithMultipleWhere(t *testing.T) {
 }
 
 func TestWhereIn(t *testing.T) {
-	db, _ := sql.Open("sqlite3", ":memory:")
-
 	builder := NewSQLBuilder("sqlite", db)
 
 	builder.
@@ -67,8 +60,6 @@ func TestWhereIn(t *testing.T) {
 }
 
 func TestWhereInWithNumber(t *testing.T) {
-	db, _ := sql.Open("sqlite3", ":memory:")
-
 	builder := NewSQLBuilder("sqlite", db)
 
 	builder.
@@ -82,8 +73,6 @@ func TestWhereInWithNumber(t *testing.T) {
 }
 
 func TestWhereBetween(t *testing.T) {
-	db, _ := sql.Open("sqlite3", ":memory:")
-
 	builder := NewSQLBuilder("sqlite", db)
 
 	builder.
