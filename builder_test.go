@@ -94,3 +94,17 @@ func TestWhereBetween(t *testing.T) {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 }
+
+func TestWhereOr(t *testing.T) {
+	builder := NewSQLBuilder("sqlite", db)
+
+	builder.
+		Select([]string{"*"}).
+		Table("users").
+		Where("age", Gte, 18).
+		OrWhere("email", Eq, "admin@example.com")
+
+	if builder.GetSql() != "SELECT * FROM users WHERE age >= ? OR email = ?" {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+}
