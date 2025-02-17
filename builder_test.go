@@ -30,7 +30,7 @@ func TestWithWhere(t *testing.T) {
 		Table("users").
 		Where("email", Eq, "johndoe@gmail.com")
 
-	if builder.GetSql() != "SELECT * FROM users WHERE email = 'johndoe@gmail.com'" {
+	if builder.GetSql() != "SELECT * FROM users WHERE email = ?" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 }
@@ -46,7 +46,7 @@ func TestWithMultipleWhere(t *testing.T) {
 		Where("email", Eq, "johndoe@gmail.com").
 		Where("access_role", Lt, 3)
 
-	if builder.GetSql() != "SELECT * FROM users WHERE email = 'johndoe@gmail.com' AND access_role < 3" {
+	if builder.GetSql() != "SELECT * FROM users WHERE email = ? AND access_role < ?" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 }
@@ -61,7 +61,7 @@ func TestWhereIn(t *testing.T) {
 		Table("users").
 		WhereIn("email", []string{"john@gmail.com", "admin@example.com"})
 
-	if builder.GetSql() != "SELECT * FROM users WHERE email IN('john@gmail.com', 'admin@example.com')" {
+	if builder.GetSql() != "SELECT * FROM users WHERE email IN(?, ?)" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 }
@@ -76,7 +76,7 @@ func TestWhereInWithNumber(t *testing.T) {
 		Table("users").
 		WhereIn("some_column", []int{1, 2, 3})
 
-	if builder.GetSql() != "SELECT * FROM users WHERE some_column IN(1, 2, 3)" {
+	if builder.GetSql() != "SELECT * FROM users WHERE some_column IN(?, ?, ?)" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 }
@@ -91,7 +91,7 @@ func TestWhereBetween(t *testing.T) {
 		Table("users").
 		WhereBetween("age", 5, 10)
 
-	if builder.GetSql() != "SELECT * FROM users WHERE age BETWEEN 5 AND 10" {
+	if builder.GetSql() != "SELECT * FROM users WHERE age BETWEEN ? AND ?" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 
@@ -101,7 +101,7 @@ func TestWhereBetween(t *testing.T) {
 		Table("users").
 		WhereBetween("dob", "1995-02-01", "2000-01-01")
 
-	if builder.GetSql() != "SELECT * FROM users WHERE dob BETWEEN '1995-02-01' AND '2000-01-01'" {
+	if builder.GetSql() != "SELECT * FROM users WHERE dob BETWEEN ? AND ?" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 }
