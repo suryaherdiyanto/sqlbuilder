@@ -12,7 +12,7 @@ var db, _ = sql.Open("sqlite3", ":memory:")
 func TestBuilder(t *testing.T) {
 	builder := NewSQLBuilder("sqlite", db)
 
-	builder.Select([]string{"*"}).Table("users")
+	builder.Select("*").Table("users")
 
 	if builder.GetSql() != "SELECT * FROM users" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
@@ -23,7 +23,7 @@ func TestWithWhere(t *testing.T) {
 	builder := NewSQLBuilder("sqlite", db)
 
 	builder.
-		Select([]string{"*"}).
+		Select("*").
 		Table("users").
 		Where("email", Eq, "johndoe@gmail.com")
 
@@ -36,7 +36,7 @@ func TestWithMultipleWhere(t *testing.T) {
 	builder := NewSQLBuilder("sqlite", db)
 
 	builder.
-		Select([]string{"*"}).
+		Select("*").
 		Table("users").
 		Where("email", Eq, "johndoe@gmail.com").
 		Where("access_role", Lt, 3)
@@ -50,7 +50,7 @@ func TestWhereIn(t *testing.T) {
 	builder := NewSQLBuilder("sqlite", db)
 
 	builder.
-		Select([]string{"*"}).
+		Select("*").
 		Table("users").
 		WhereIn("email", []string{"john@gmail.com", "admin@example.com"})
 
@@ -63,7 +63,7 @@ func TestWhereInWithNumber(t *testing.T) {
 	builder := NewSQLBuilder("sqlite", db)
 
 	builder.
-		Select([]string{"*"}).
+		Select("*").
 		Table("users").
 		WhereIn("some_column", []int{1, 2, 3})
 
@@ -76,7 +76,7 @@ func TestWhereBetween(t *testing.T) {
 	builder := NewSQLBuilder("sqlite", db)
 
 	builder.
-		Select([]string{"*"}).
+		Select("*").
 		Table("users").
 		WhereBetween("age", 5, 10)
 
@@ -86,7 +86,7 @@ func TestWhereBetween(t *testing.T) {
 
 	builder = NewSQLBuilder("sqlite", db)
 	builder.
-		Select([]string{"*"}).
+		Select("*").
 		Table("users").
 		WhereBetween("dob", "1995-02-01", "2000-01-01")
 
@@ -99,7 +99,7 @@ func TestWhereOr(t *testing.T) {
 	builder := NewSQLBuilder("sqlite", db)
 
 	builder.
-		Select([]string{"*"}).
+		Select("*").
 		Table("users").
 		Where("age", Gte, 18).
 		OrWhere("email", Eq, "admin@example.com")
