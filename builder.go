@@ -8,22 +8,24 @@ import (
 )
 
 const (
-	Eq = "="
-	Lte = "<="
-	Lt = "<"
-	Gte = ">="
-	Gt= ">"
+	Eq   = "="
+	Lte  = "<="
+	Lt   = "<"
+	Gte  = ">="
+	Gt   = ">"
+	Desc = "DESC"
+	Asc  = "ASC"
 )
 
 const (
-	whereOr = "OR"
+	whereOr  = "OR"
 	whereAnd = "AND"
 )
 
 type SQLBuilder struct {
-	dialect string
-	sql *sql.DB
-	hasWhere bool
+	dialect   string
+	sql       *sql.DB
+	hasWhere  bool
 	arguments []interface{}
 	Statement string
 }
@@ -37,6 +39,8 @@ type Builder interface {
 	OrWhere(column string, comp string, val interface{}) Builder
 	OrWhereIn(column string, d interface{}) Builder
 	OrWhereBetween(column string, start interface{}, end interface{}) Builder
+	OrderBy(column string, dir string) Builder
+	GroupBy(columns ...string) Builder
 	GetSql() string
 }
 
@@ -132,6 +136,14 @@ func (b *SQLBuilder) OrWhereBetween(column string, start interface{}, end interf
 	b.setWhereOperator(whereOr)
 	return b.buildWhereBetween(column, start, end)
 }
+func (b *SQLBuilder) OrderBy(column string, dir string) Builder {
+	b.Statement += fmt.Sprintf(" ORDER BY %s %s", column, dir)
+	return b
+}
+func (b *SQLBuilder) GroupBy(column ...string) Builder {
+	b.Statement += fmt.Sprintf(" GROUP BY %s", strings.Join(column, ", "))
+	return b
+}
 
 func (b *SQLBuilder) setWhereOperator(op string) {
 	if !b.HasWhere() {
@@ -154,4 +166,3 @@ func NewSQLBuilder(dialect string, sql *sql.DB) *SQLBuilder {
 func (b *SQLBuilder) HasWhere() bool {
 	return b.hasWhere
 }
-
