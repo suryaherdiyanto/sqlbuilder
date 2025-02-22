@@ -32,7 +32,7 @@ type SQLBuilder struct {
 
 type Builder interface {
 	Table(table string) Builder
-	Select(cols []string) Builder
+	Select(cols ...string) Builder
 	Where(column string, comp string, val interface{}) Builder
 	WhereIn(column string, d interface{}) Builder
 	WhereBetween(column string, start interface{}, end interface{}) Builder
@@ -49,7 +49,7 @@ func (b *SQLBuilder) Table(table string) Builder {
 	return b
 }
 
-func (b *SQLBuilder) Select(cols []string) Builder {
+func (b *SQLBuilder) Select(cols ...string) Builder {
 	b.Statement += "SELECT " + strings.Join(cols, ", ")
 	return b
 }
