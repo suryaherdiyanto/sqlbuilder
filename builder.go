@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"sync"
 )
 
 const (
@@ -30,7 +29,6 @@ type SQLBuilder struct {
 	hasWhere  bool
 	arguments []interface{}
 	Statement string
-	sync.Mutex
 }
 
 type Builder interface {
@@ -198,9 +196,7 @@ func (b *SQLBuilder) Exec(ctx context.Context) error {
 }
 
 func (b *SQLBuilder) clearStatement() {
-	b.Lock()
 	b.Statement = ""
-	b.Unlock()
 }
 
 func (b *SQLBuilder) setWhereOperator(op string) {
