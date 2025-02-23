@@ -32,25 +32,25 @@ type SQLBuilder struct {
 }
 
 type Builder interface {
-	Table(table string) Builder
-	Select(cols ...string) Builder
-	Where(column string, comp string, val interface{}) Builder
-	WhereIn(column string, d interface{}) Builder
-	WhereBetween(column string, start interface{}, end interface{}) Builder
-	OrWhere(column string, comp string, val interface{}) Builder
-	OrWhereIn(column string, d interface{}) Builder
-	OrWhereBetween(column string, start interface{}, end interface{}) Builder
-	OrderBy(column string, dir string) Builder
-	GroupBy(columns ...string) Builder
+	Table(table string) *SQLBuilder
+	Select(cols ...string) *SQLBuilder
+	Where(column string, comp string, val interface{}) *SQLBuilder
+	WhereIn(column string, d interface{}) *SQLBuilder
+	WhereBetween(column string, start interface{}, end interface{}) *SQLBuilder
+	OrWhere(column string, comp string, val interface{}) *SQLBuilder
+	OrWhereIn(column string, d interface{}) *SQLBuilder
+	OrWhereBetween(column string, start interface{}, end interface{}) *SQLBuilder
+	OrderBy(column string, dir string) *SQLBuilder
+	GroupBy(columns ...string) *SQLBuilder
 	GetSql() string
 }
 
-func (b *SQLBuilder) Table(table string) Builder {
+func (b *SQLBuilder) Table(table string) *SQLBuilder {
 	b.Statement += " FROM " + table
 	return b
 }
 
-func (b *SQLBuilder) Select(cols ...string) Builder {
+func (b *SQLBuilder) Select(cols ...string) *SQLBuilder {
 	b.Statement += "SELECT " + strings.Join(cols, ", ")
 	return b
 }
@@ -59,14 +59,14 @@ func (b *SQLBuilder) GetSql() string {
 	return b.Statement
 }
 
-func (b *SQLBuilder) buildWhere(column string, comp string, val interface{}) Builder {
+func (b *SQLBuilder) buildWhere(column string, comp string, val interface{}) *SQLBuilder {
 	b.Statement += fmt.Sprintf(" %s %s ?", column, comp)
 	b.arguments = append(b.arguments, val)
 
 	return b
 }
 
-func (b *SQLBuilder) buildWhereIn(column string, values interface{}) Builder {
+func (b *SQLBuilder) buildWhereIn(column string, values interface{}) *SQLBuilder {
 	var inValues string
 
 	ref := reflect.ValueOf(values)
@@ -92,7 +92,7 @@ func (b *SQLBuilder) buildWhereIn(column string, values interface{}) Builder {
 	return b
 }
 
-func (b *SQLBuilder) buildWhereBetween(column string, start interface{}, end interface{}) Builder {
+func (b *SQLBuilder) buildWhereBetween(column string, start interface{}, end interface{}) *SQLBuilder {
 	startRef := reflect.ValueOf(start)
 	endRef := reflect.ValueOf(end)
 
@@ -110,48 +110,60 @@ func (b *SQLBuilder) buildWhereBetween(column string, start interface{}, end int
 	return b
 }
 
-func (b *SQLBuilder) Where(column string, comp string, val interface{}) Builder {
+func (b *SQLBuilder) Where(column string, comp string, val interface{}) *SQLBuilder {
 	b.setWhereOperator(whereAnd)
 	return b.buildWhere(column, comp, val)
 }
 
-func (b *SQLBuilder) OrWhere(column string, comp string, val interface{}) Builder {
+func (b *SQLBuilder) OrWhere(column string, comp string, val interface{}) *SQLBuilder {
 	b.setWhereOperator(whereOr)
 	return b.buildWhere(column, comp, val)
 }
 
-func (b *SQLBuilder) WhereIn(column string, values interface{}) Builder {
+func (b *SQLBuilder) WhereIn(column string, values interface{}) *SQLBuilder {
 	b.setWhereOperator(whereAnd)
 	return b.buildWhereIn(column, values)
 }
-func (b *SQLBuilder) OrWhereIn(column string, values interface{}) Builder {
+func (b *SQLBuilder) OrWhereIn(column string, values interface{}) *SQLBuilder {
 	b.setWhereOperator(whereOr)
 	return b.buildWhereIn(column, values)
 }
 
-func (b *SQLBuilder) WhereBetween(column string, start interface{}, end interface{}) Builder {
+func (b *SQLBuilder) WhereBetween(column string, start interface{}, end interface{}) *SQLBuilder {
 	b.setWhereOperator(whereAnd)
 	return b.buildWhereBetween(column, start, end)
 }
-func (b *SQLBuilder) OrWhereBetween(column string, start interface{}, end interface{}) Builder {
+func (b *SQLBuilder) OrWhereBetween(column string, start interface{}, end interface{}) *SQLBuilder {
 	b.setWhereOperator(whereOr)
 	return b.buildWhereBetween(column, start, end)
 }
-func (b *SQLBuilder) OrderBy(column string, dir string) Builder {
+func (b *SQLBuilder) OrderBy(column string, dir string) *SQLBuilder {
 	b.Statement += fmt.Sprintf(" ORDER BY %s %s", column, dir)
 	return b
 }
-func (b *SQLBuilder) GroupBy(column ...string) Builder {
+func (b *SQLBuilder) GroupBy(column ...string) *SQLBuilder {
 	b.Statement += fmt.Sprintf(" GROUP BY %s", strings.Join(column, ", "))
 	return b
 }
 func (b *SQLBuilder) Scan(d interface{}, ctx context.Context) error {
 	rows, err := b.runQuery(ctx)
-	ScanStruct(d, rows)
-	return err
+	defer rows.Close()
+
+	if err != nil {
+		return err
+	}
+
+	if rows.Next() {
+		return ScanStruct(d, rows)
+	}
+
+	return nil
+
 }
 func (b *SQLBuilder) ScanAll(d interface{}, ctx context.Context) error {
 	rows, err := b.runQuery(ctx)
+	defer rows.Close()
+
 	ScanAll(d, rows)
 	return err
 }
