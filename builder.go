@@ -42,6 +42,8 @@ type Builder interface {
 	OrWhereBetween(column string, start interface{}, end interface{}) *SQLBuilder
 	OrderBy(column string, dir string) *SQLBuilder
 	GroupBy(columns ...string) *SQLBuilder
+	Limit(n int) *SQLBuilder
+	Offet(n int) *SQLBuilder
 	GetSql() string
 }
 
@@ -143,6 +145,19 @@ func (b *SQLBuilder) OrderBy(column string, dir string) *SQLBuilder {
 }
 func (b *SQLBuilder) GroupBy(column ...string) *SQLBuilder {
 	b.Statement += fmt.Sprintf(" GROUP BY %s", strings.Join(column, ", "))
+	return b
+}
+func (b *SQLBuilder) Limit(n int) *SQLBuilder {
+	b.Statement += fmt.Sprintf(" LIMIT %d", n)
+	return b
+}
+func (b *SQLBuilder) Offset(n int) *SQLBuilder {
+	b.Statement += fmt.Sprintf(" OFFSET %d", n)
+	return b
+}
+func (b *SQLBuilder) WhereRaw(statement string, args ...interface{}) *SQLBuilder {
+	b.Statement += " " + statement	
+	b.arguments = append(b.arguments, args...)
 	return b
 }
 func (b *SQLBuilder) Scan(d interface{}, ctx context.Context) error {
