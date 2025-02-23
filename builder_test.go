@@ -10,6 +10,28 @@ import (
 
 var db, _ = sql.Open("sqlite3", ":memory:")
 
+func setupSuite(tb testing.TB) func(tb testing.TB) {
+	db.Exec(`
+		CREATE TABLE users(
+			id integer primary key,
+			username TEXT,
+			email TEXT,
+			age integer
+		)
+	`)
+
+	db.Exec(`
+		INSERT INTO users values(null, 'johndoe', 'johndoe@example.com', 35);
+	`)
+	db.Exec(`
+		INSERT INTO users values(null, 'daniel', 'daniel@example.com', 32);
+	`)
+
+	return func(tb testing.TB) {
+		db.Exec("DROP table users");
+	}
+}
+
 func TestBuilder(t *testing.T) {
 	builder := NewSQLBuilder("sqlite", db)
 
@@ -111,25 +133,8 @@ func TestWhereOr(t *testing.T) {
 }
 
 func TestExecute(t *testing.T) {
-	_, err := db.Exec(`
-		CREATE TABLE users(
-			id integer primary key,
-			username TEXT,
-			email TEXT,
-			age integer
-		)
-	`)
-	if err != nil {
-		t.Errorf("%v", err)
-	}
-
-	_, err = db.Exec(`
-		INSERT INTO users values(null, 'johndoe', 'johndoe@example.com', 35)
-	`)
-
-	if err != nil {
-		t.Errorf("%v", err)
-	}
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
 
 	type User struct {
 		Id int `db:"id"`
@@ -141,7 +146,7 @@ func TestExecute(t *testing.T) {
 	user := new(User)
 	builder := NewSQLBuilder("sqlite", db)
 
-	err = builder.Select("*").Table("users").Scan(user, context.Background())
+	err := builder.Select("*").Table("users").Scan(user, context.Background())
 
 	if err != nil {
 		t.Error(err)
