@@ -1,6 +1,7 @@
 package sqlbuilder
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 
@@ -107,4 +108,47 @@ func TestWhereOr(t *testing.T) {
 	if builder.GetSql() != "SELECT * FROM users WHERE age >= ? OR email = ?" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
+}
+
+func TestExecute(t *testing.T) {
+	_, err := db.Exec(`
+		CREATE TABLE users(
+			id integer primary key,
+			username TEXT,
+			email TEXT,
+			age integer
+		)
+	`)
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	_, err = db.Exec(`
+		INSERT INTO users values(null, 'johndoe', 'johndoe@example.com', 35)
+	`)
+
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	type User struct {
+		Id int `db:"id"`
+		Username string `db:"username"`
+		Email string `db:"email"`
+		Age int `db:"age"`
+	}
+
+	user := new(User)
+	builder := NewSQLBuilder("sqlite", db)
+
+	err = builder.Select("*").Table("users").Scan(user, context.Background())
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if user.Email != "johndoe@example.com" {
+		t.Errorf("Expected johndoe@example.com, but got: %s", user.Email)
+	}
+
 }
