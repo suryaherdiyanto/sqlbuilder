@@ -3,6 +3,7 @@ package sqlbuilder
 import (
 	"context"
 	"database/sql"
+	"sync"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -206,4 +207,42 @@ func TestWhereAnd(t *testing.T) {
 		t.Errorf("Expected return %d of users, but got %d", 3, len(users))
 	}
 
+}
+
+func TestGoRoutineSafe(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	var users []User
+	user := new(User)
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func(wg *sync.WaitGroup, builder *SQLBuilder) {
+		err := builder.
+				Select("*").
+				Table("users").
+				Where("age", Lt, 30).
+				Where("email", "like", "%@example.com").
+				ScanAll(&users, context.Background())
+
+		if err != nil {
+			t.Error(err)
+		}
+		wg.Done()
+	}(&wg, NewSQLBuilder("sqlite", db))
+	wg.Add(1)
+	go func(wg *sync.WaitGroup, builder *SQLBuilder) {
+		err := builder.
+				Select("*").
+				Table("users").
+				Where("email", Eq, "johndoe@gmail.com").
+				Scan(user, context.Background())
+
+		if err != nil {
+			t.Error(err)
+		}
+		wg.Done()
+	}(&wg, NewSQLBuilder("sqlite", db))
+	wg.Wait()
 }
