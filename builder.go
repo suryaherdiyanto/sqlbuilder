@@ -164,6 +164,7 @@ func (b *SQLBuilder) WhereRaw(statement string, args ...interface{}) *SQLBuilder
 func (b *SQLBuilder) Scan(d interface{}, ctx context.Context) error {
 	rows, err := b.runQuery(ctx)
 	defer rows.Close()
+	defer b.clearStatement()
 
 	if err != nil {
 		return err
@@ -179,6 +180,7 @@ func (b *SQLBuilder) Scan(d interface{}, ctx context.Context) error {
 func (b *SQLBuilder) ScanAll(d interface{}, ctx context.Context) error {
 	rows, err := b.runQuery(ctx)
 	defer rows.Close()
+	defer b.clearStatement()
 
 	if err != nil {
 		return err
@@ -188,7 +190,13 @@ func (b *SQLBuilder) ScanAll(d interface{}, ctx context.Context) error {
 }
 func (b *SQLBuilder) Exec(ctx context.Context) error {
 	_, err := b.sql.ExecContext(ctx, b.Statement, b.arguments...)
+	defer b.clearStatement()
+
 	return err
+}
+
+func (b *SQLBuilder) clearStatement() {
+	b.Statement = ""
 }
 
 func (b *SQLBuilder) setWhereOperator(op string) {
