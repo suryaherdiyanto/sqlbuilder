@@ -1,6 +1,7 @@
 package sqlbuilder
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"reflect"
@@ -144,6 +145,20 @@ func (b *SQLBuilder) GroupBy(column ...string) Builder {
 	b.Statement += fmt.Sprintf(" GROUP BY %s", strings.Join(column, ", "))
 	return b
 }
+func (b *SQLBuilder) Scan(d interface{}, ctx context.Context) error {
+	rows, err := b.runQuery(ctx)
+	ScanStruct(d, rows)
+	return err
+}
+func (b *SQLBuilder) ScanAll(d interface{}, ctx context.Context) error {
+	rows, err := b.runQuery(ctx)
+	ScanAll(d, rows)
+	return err
+}
+func (b *SQLBuilder) Exec(ctx context.Context) error {
+	_, err := b.sql.ExecContext(ctx, b.Statement, b.arguments...)
+	return err
+}
 
 func (b *SQLBuilder) setWhereOperator(op string) {
 	if !b.HasWhere() {
@@ -157,6 +172,10 @@ func (b *SQLBuilder) setWhereOperator(op string) {
 	if strings.Contains(b.Statement, "WHERE") {
 		b.hasWhere = true
 	}
+}
+
+func (b *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
+	return b.sql.QueryContext(ctx, b.Statement, b.arguments...)
 }
 
 func NewSQLBuilder(dialect string, sql *sql.DB) *SQLBuilder {
