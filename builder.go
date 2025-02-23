@@ -44,6 +44,7 @@ type Builder interface {
 	GroupBy(columns ...string) *SQLBuilder
 	Limit(n int) *SQLBuilder
 	Offet(n int) *SQLBuilder
+	WhereRaw(statement string, args ...interface{}) *SQLBuilder
 	GetSql() string
 }
 
