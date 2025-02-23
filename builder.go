@@ -164,8 +164,11 @@ func (b *SQLBuilder) ScanAll(d interface{}, ctx context.Context) error {
 	rows, err := b.runQuery(ctx)
 	defer rows.Close()
 
-	ScanAll(d, rows)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return ScanAll(d, rows)
 }
 func (b *SQLBuilder) Exec(ctx context.Context) error {
 	_, err := b.sql.ExecContext(ctx, b.Statement, b.arguments...)
