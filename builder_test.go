@@ -9,6 +9,12 @@ import (
 )
 
 var db, _ = sql.Open("sqlite3", ":memory:")
+type User struct {
+	Id int `db:"id"`
+	Username string `db:"username"`
+	Email string `db:"email"`
+	Age int `db:"age"`
+}
 
 func setupSuite(tb testing.TB) func(tb testing.TB) {
 	db.Exec(`
@@ -135,13 +141,6 @@ func TestWhereOr(t *testing.T) {
 func TestExecute(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
-
-	type User struct {
-		Id int `db:"id"`
-		Username string `db:"username"`
-		Email string `db:"email"`
-		Age int `db:"age"`
-	}
 
 	user := new(User)
 	builder := NewSQLBuilder("sqlite", db)
