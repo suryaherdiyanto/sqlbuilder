@@ -32,6 +32,15 @@ func setupSuite(tb testing.TB) func(tb testing.TB) {
 	db.Exec(`
 		INSERT INTO users values(null, 'daniel', 'daniel@example.com', 32);
 	`)
+	db.Exec(`
+		INSERT INTO users values(null, 'samuel', 'samuel@example.com', 28);
+	`)
+	db.Exec(`
+		INSERT INTO users values(null, 'dirt', 'dirt@example.com', 20);
+	`)
+	db.Exec(`
+		INSERT INTO users values(null, 'chris', 'chris@example.com', 25);
+	`)
 
 	return func(tb testing.TB) {
 		db.Exec("DROP table users");
@@ -153,6 +162,48 @@ func TestExecute(t *testing.T) {
 
 	if user.Email != "johndoe@example.com" {
 		t.Errorf("Expected johndoe@example.com, but got: %s", user.Email)
+	}
+
+}
+
+func TestExecuteWhere(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	user := new(User)
+	builder := NewSQLBuilder("sqlite", db)
+
+	err := builder.Select("*").Table("users").Where("email", Eq, "daniel@example.com").Limit(1).Scan(user, context.Background())
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if user.Email != "daniel@example.com" {
+		t.Errorf("Expected daniel@example.com, but got: %s", user.Email)
+	}
+}
+
+func TestWhereAnd(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	var users []User
+	builder := NewSQLBuilder("sqlite", db)
+
+	err := builder.
+				Select("*").
+				Table("users").
+				Where("age", Lt, 30).
+				Where("email", "like", "%@example.com").
+				ScanAll(&users, context.Background())
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(users) != 3 {
+		t.Errorf("Expected return %d of users, but got %d", 3, len(users))
 	}
 
 }
