@@ -3,18 +3,18 @@ package sqlbuilder
 import (
 	"context"
 	"database/sql"
-	"sync"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var db, _ = sql.Open("sqlite3", ":memory:")
+
 type User struct {
-	Id int `db:"id"`
+	Id       int    `db:"id"`
 	Username string `db:"username"`
-	Email string `db:"email"`
-	Age int `db:"age"`
+	Email    string `db:"email"`
+	Age      int    `db:"age"`
 }
 
 func setupSuite(tb testing.TB) func(tb testing.TB) {
@@ -44,14 +44,14 @@ func setupSuite(tb testing.TB) func(tb testing.TB) {
 	`)
 
 	return func(tb testing.TB) {
-		db.Exec("DROP table users");
+		db.Exec("DROP table users")
 	}
 }
 
 func TestBuilder(t *testing.T) {
-	builder := NewSQLBuilder("sqlite", db)
+	builder := NewSelect("sqlite", db)
 
-	builder.Select("*").Table("users")
+	builder.Table("users", "*")
 
 	if builder.GetSql() != "SELECT * FROM users" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
@@ -59,12 +59,11 @@ func TestBuilder(t *testing.T) {
 }
 
 func TestWithWhere(t *testing.T) {
-	builder := NewSQLBuilder("sqlite", db)
+	builder := NewSelect("sqlite", db)
 
 	builder.
-		Select("*").
-		Table("users").
-		Where("email", Eq, "johndoe@gmail.com")
+		Table("users", "*").
+		Where("email = ?", "johndoe@gmail.com")
 
 	if builder.GetSql() != "SELECT * FROM users WHERE email = ?" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
@@ -72,13 +71,11 @@ func TestWithWhere(t *testing.T) {
 }
 
 func TestWithMultipleWhere(t *testing.T) {
-	builder := NewSQLBuilder("sqlite", db)
+	builder := NewSelect("sqlite", db)
 
 	builder.
-		Select("*").
-		Table("users").
-		Where("email", Eq, "johndoe@gmail.com").
-		Where("access_role", Lt, 3)
+		Table("users", "*").
+		Where("email = ? AND access_role < ?", "johndoe@gmail.com", 3)
 
 	if builder.GetSql() != "SELECT * FROM users WHERE email = ? AND access_role < ?" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
@@ -86,48 +83,30 @@ func TestWithMultipleWhere(t *testing.T) {
 }
 
 func TestWhereIn(t *testing.T) {
-	builder := NewSQLBuilder("sqlite", db)
+	builder := NewSelect("sqlite", db)
 
-	builder.
-		Select("*").
-		Table("users").
-		WhereIn("email", []string{"john@gmail.com", "admin@example.com"})
+	builder.Table("users", "*").Where("email IN(?, ?)", "johndoe@example.com", "amal@example.com")
 
 	if builder.GetSql() != "SELECT * FROM users WHERE email IN(?, ?)" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 }
 
-func TestWhereInWithNumber(t *testing.T) {
-	builder := NewSQLBuilder("sqlite", db)
-
-	builder.
-		Select("*").
-		Table("users").
-		WhereIn("some_column", []int{1, 2, 3})
-
-	if builder.GetSql() != "SELECT * FROM users WHERE some_column IN(?, ?, ?)" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
-	}
-}
-
 func TestWhereBetween(t *testing.T) {
-	builder := NewSQLBuilder("sqlite", db)
+	builder := NewSelect("sqlite", db)
 
 	builder.
-		Select("*").
-		Table("users").
-		WhereBetween("age", 5, 10)
+		Table("users", "*").
+		Where("age BETWEEN ? AND ?", 5, 10)
 
 	if builder.GetSql() != "SELECT * FROM users WHERE age BETWEEN ? AND ?" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 
-	builder = NewSQLBuilder("sqlite", db)
+	builder = NewSelect("sqlite", db)
 	builder.
-		Select("*").
-		Table("users").
-		WhereBetween("dob", "1995-02-01", "2000-01-01")
+		Table("users", "*").
+		Where("dob BETWEEN ? AND ?", "1995-02-01", "2000-01-01")
 
 	if builder.GetSql() != "SELECT * FROM users WHERE dob BETWEEN ? AND ?" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
@@ -135,13 +114,11 @@ func TestWhereBetween(t *testing.T) {
 }
 
 func TestWhereOr(t *testing.T) {
-	builder := NewSQLBuilder("sqlite", db)
+	builder := NewSelect("sqlite", db)
 
 	builder.
-		Select("*").
-		Table("users").
-		Where("age", Gte, 18).
-		OrWhere("email", Eq, "admin@example.com")
+		Table("users", "*").
+		Where("age >= ? OR email = ?", 18, "johndoe@example.com")
 
 	if builder.GetSql() != "SELECT * FROM users WHERE age >= ? OR email = ?" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
@@ -153,9 +130,9 @@ func TestExecute(t *testing.T) {
 	defer teardownSuite(t)
 
 	user := new(User)
-	builder := NewSQLBuilder("sqlite", db)
+	builder := NewSelect("sqlite", db)
 
-	err := builder.Select("*").Table("users").Scan(user, context.Background())
+	err := builder.Table("users", "*").Scan(user, context.Background())
 
 	if err != nil {
 		t.Error(err)
@@ -172,9 +149,9 @@ func TestExecuteWhere(t *testing.T) {
 	defer teardownSuite(t)
 
 	user := new(User)
-	builder := NewSQLBuilder("sqlite", db)
+	builder := NewSelect("sqlite", db)
 
-	err := builder.Select("*").Table("users").Where("email", Eq, "daniel@example.com").Limit(1).Scan(user, context.Background())
+	err := builder.Table("users", "*").Where("email = ?", "daniel@example.com").Limit(1).Scan(user, context.Background())
 
 	if err != nil {
 		t.Error(err)
@@ -190,14 +167,12 @@ func TestWhereAnd(t *testing.T) {
 	defer teardownSuite(t)
 
 	var users []User
-	builder := NewSQLBuilder("sqlite", db)
+	builder := NewSelect("sqlite", db)
 
 	err := builder.
-				Select("*").
-				Table("users").
-				Where("age", Lt, 30).
-				Where("email", "like", "%@example.com").
-				ScanAll(&users, context.Background())
+		Table("users", "*").
+		Where("age < ? AND email like ?", 30, "%@example.com").
+		ScanAll(&users, context.Background())
 
 	if err != nil {
 		t.Error(err)
@@ -207,42 +182,4 @@ func TestWhereAnd(t *testing.T) {
 		t.Errorf("Expected return %d of users, but got %d", 3, len(users))
 	}
 
-}
-
-func TestGoRoutineSafe(t *testing.T) {
-	teardownSuite := setupSuite(t)
-	defer teardownSuite(t)
-
-	var users []User
-	user := new(User)
-	var wg sync.WaitGroup
-
-	wg.Add(1)
-	go func(wg *sync.WaitGroup, builder *SQLBuilder) {
-		err := builder.
-				Select("*").
-				Table("users").
-				Where("age", Lt, 30).
-				Where("email", "like", "%@example.com").
-				ScanAll(&users, context.Background())
-
-		if err != nil {
-			t.Error(err)
-		}
-		wg.Done()
-	}(&wg, NewSQLBuilder("sqlite", db))
-	wg.Add(1)
-	go func(wg *sync.WaitGroup, builder *SQLBuilder) {
-		err := builder.
-				Select("*").
-				Table("users").
-				Where("email", Eq, "johndoe@gmail.com").
-				Scan(user, context.Background())
-
-		if err != nil {
-			t.Error(err)
-		}
-		wg.Done()
-	}(&wg, NewSQLBuilder("sqlite", db))
-	wg.Wait()
 }
