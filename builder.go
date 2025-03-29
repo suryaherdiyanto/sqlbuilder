@@ -37,7 +37,6 @@ type Builder interface {
 	GroupBy(columns ...string) *SQLBuilder
 	Limit(n int) *SQLBuilder
 	Offet(n int) *SQLBuilder
-	GetSql() string
 }
 
 func NewSelect(dialect string, db *sql.DB) *SQLBuilder {
