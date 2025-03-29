@@ -132,7 +132,7 @@ func TestExecute(t *testing.T) {
 	user := new(User)
 	builder := NewSelect("sqlite", db)
 
-	err := builder.Table("users", "*").Scan(user, context.Background())
+	err := builder.Table("users", "*").Find(user, context.Background())
 
 	if err != nil {
 		t.Error(err)
@@ -151,7 +151,7 @@ func TestExecuteWhere(t *testing.T) {
 	user := new(User)
 	builder := NewSelect("sqlite", db)
 
-	err := builder.Table("users", "*").Where("email = ?", "daniel@example.com").Limit(1).Scan(user, context.Background())
+	err := builder.Table("users", "*").Where("email = ?", "daniel@example.com").Limit(1).Find(user, context.Background())
 
 	if err != nil {
 		t.Error(err)
@@ -172,7 +172,7 @@ func TestWhereAnd(t *testing.T) {
 	err := builder.
 		Table("users", "*").
 		Where("age < ? AND email like ?", 30, "%@example.com").
-		ScanAll(&users, context.Background())
+		Get(&users, context.Background())
 
 	if err != nil {
 		t.Error(err)

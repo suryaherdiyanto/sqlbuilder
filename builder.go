@@ -80,7 +80,7 @@ func (b *SQLBuilder) Offset(n int) *SQLBuilder {
 	return b
 }
 
-func (b *SQLBuilder) Scan(d interface{}, ctx context.Context) error {
+func (b *SQLBuilder) Find(d interface{}, ctx context.Context) error {
 	rows, err := b.runQuery(ctx)
 	defer rows.Close()
 
@@ -95,7 +95,7 @@ func (b *SQLBuilder) Scan(d interface{}, ctx context.Context) error {
 	return nil
 
 }
-func (b *SQLBuilder) ScanAll(d interface{}, ctx context.Context) error {
+func (b *SQLBuilder) Get(d interface{}, ctx context.Context) error {
 	rows, err := b.runQuery(ctx)
 	defer rows.Close()
 
