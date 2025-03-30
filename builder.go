@@ -26,8 +26,12 @@ type SQLBuilder struct {
 	Dialect   string
 	sql       *sql.DB
 	hasWhere  bool
+	statement *Statement
+}
+
+type Statement struct {
+	SQL       string
 	arguments []interface{}
-	Statement string
 }
 
 type Builder interface {
@@ -43,81 +47,88 @@ type Builder interface {
 	Offset(n int) *SQLBuilder
 }
 
-func NewSelect(dialect string, db *sql.DB) *SQLBuilder {
+func New(dialect string, db *sql.DB) *SQLBuilder {
 	return &SQLBuilder{
-		Dialect:   dialect,
-		sql:       db,
-		Statement: "SELECT ",
+		Dialect: dialect,
+		sql:     db,
 	}
 }
 
-func (b *SQLBuilder) Table(table string, columns ...string) *SQLBuilder {
-	b.Statement += fmt.Sprintf("%s FROM %s", strings.Join(columns, ","), table)
-	return b
+func (s *SQLBuilder) NewSelect() *SQLBuilder {
+	statement := &Statement{
+		SQL: "SELECT ",
+	}
+	s.statement = statement
+	return s
 }
 
-func (b *SQLBuilder) GetSql() string {
-	return b.Statement
+func (s *SQLBuilder) Table(table string, columns ...string) *SQLBuilder {
+	s.statement.SQL += fmt.Sprintf("%s FROM %s", strings.Join(columns, ","), table)
+	return s
 }
 
-func (b *SQLBuilder) GetArguments() []interface{} {
-	return b.arguments
+func (s *SQLBuilder) GetSql() string {
+	return s.statement.SQL
 }
 
-func (b *SQLBuilder) Where(statement string, vars ...interface{}) *SQLBuilder {
-	b.Statement += fmt.Sprintf(" WHERE %s", statement)
-	b.arguments = append(b.arguments, vars...)
-	return b
+func (s *SQLBuilder) GetArguments() []interface{} {
+	return s.statement.arguments
 }
 
-func (b *SQLBuilder) Join(table string, first string, operator string, second string) {
-	b.Statement += fmt.Sprintf(" INNER JOIN %s ON %s %s %s", table, first, operator, second)
+func (s *SQLBuilder) Where(statement string, vars ...interface{}) *SQLBuilder {
+	s.statement.SQL += fmt.Sprintf(" WHERE %s", statement)
+	s.statement.arguments = append(s.statement.arguments, vars...)
+	return s
 }
 
-func (b *SQLBuilder) LeftJoin(table string, first string, operator string, second string) {
-	b.Statement += fmt.Sprintf(" LEFT JOIN %s ON %s %s %s", table, first, operator, second)
+func (s *SQLBuilder) Join(table string, first string, operator string, second string) {
+	s.statement.SQL += fmt.Sprintf(" INNER JOIN %s ON %s %s %s", table, first, operator, second)
 }
 
-func (b *SQLBuilder) RightJoin(table string, first string, operator string, second string) {
-	b.Statement += fmt.Sprintf(" RIGHT JOIN %s ON %s %s %s", table, first, operator, second)
+func (s *SQLBuilder) LeftJoin(table string, first string, operator string, second string) {
+	s.statement.SQL += fmt.Sprintf(" LEFT JOIN %s ON %s %s %s", table, first, operator, second)
 }
 
-func (b *SQLBuilder) WhereFunc(statement string, builder func(b Builder) *SQLBuilder) *SQLBuilder {
-	newBuilder := builder(NewSelect(b.Dialect, b.sql))
-
-	b.Statement += fmt.Sprintf(" WHERE %s", statement)
-	b.Statement += fmt.Sprintf("(%s)", newBuilder.GetSql())
-	b.arguments = append(b.arguments, newBuilder.GetArguments()...)
-	return b
+func (s *SQLBuilder) RightJoin(table string, first string, operator string, second string) {
+	s.statement.SQL += fmt.Sprintf(" RIGHT JOIN %s ON %s %s %s", table, first, operator, second)
 }
 
-func (b *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder {
-	newBuilder := builder(NewSelect(b.Dialect, b.sql))
-	b.Statement += fmt.Sprintf(" WHERE EXISTS (%s)", newBuilder.GetSql())
-	b.arguments = append(b.arguments, newBuilder.GetArguments()...)
+func (s *SQLBuilder) WhereFunc(statement string, builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	newBuilder := builder(New(s.Dialect, s.sql).NewSelect())
 
-	return b
-}
-
-func (b *SQLBuilder) OrderBy(column string, dir string) *SQLBuilder {
-	b.Statement += fmt.Sprintf(" ORDER BY %s %s", column, dir)
-	return b
-}
-func (b *SQLBuilder) GroupBy(column ...string) *SQLBuilder {
-	b.Statement += fmt.Sprintf(" GROUP BY %s", strings.Join(column, ", "))
-	return b
-}
-func (b *SQLBuilder) Limit(n int) *SQLBuilder {
-	b.Statement += fmt.Sprintf(" LIMIT %d", n)
-	return b
-}
-func (b *SQLBuilder) Offset(n int) *SQLBuilder {
-	b.Statement += fmt.Sprintf(" OFFSET %d", n)
-	return b
+	s.statement.SQL += fmt.Sprintf(" WHERE %s", statement)
+	s.statement.SQL += fmt.Sprintf("(%s)", newBuilder.GetSql())
+	s.statement.arguments = append(s.statement.arguments, newBuilder.GetArguments()...)
+	return s
 }
 
-func (b *SQLBuilder) Find(d interface{}, ctx context.Context) error {
-	rows, err := b.runQuery(ctx)
+func (s *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	newBuilder := builder(New(s.Dialect, s.sql).NewSelect())
+	s.statement.SQL += fmt.Sprintf(" WHERE EXISTS (%s)", newBuilder.GetSql())
+	s.statement.arguments = append(s.statement.arguments, newBuilder.GetArguments()...)
+
+	return s
+}
+
+func (s *SQLBuilder) OrderBy(column string, dir string) *SQLBuilder {
+	s.statement.SQL += fmt.Sprintf(" ORDER BY %s %s", column, dir)
+	return s
+}
+func (s *SQLBuilder) GroupBy(columns ...string) *SQLBuilder {
+	s.statement.SQL += fmt.Sprintf(" GROUP BY %s", strings.Join(columns, ", "))
+	return s
+}
+func (s *SQLBuilder) Limit(n int) *SQLBuilder {
+	s.statement.SQL += fmt.Sprintf(" LIMIT %d", n)
+	return s
+}
+func (s *SQLBuilder) Offset(n int) *SQLBuilder {
+	s.statement.SQL += fmt.Sprintf(" OFFSET %d", n)
+	return s
+}
+
+func (s *SQLBuilder) Find(d interface{}, ctx context.Context) error {
+	rows, err := s.runQuery(ctx)
 	defer rows.Close()
 
 	if err != nil {
@@ -145,12 +156,26 @@ func (b *SQLBuilder) Get(d interface{}, ctx context.Context) error {
 
 	return nil
 }
-func (b *SQLBuilder) Exec(ctx context.Context) error {
-	_, err := b.sql.ExecContext(ctx, b.Statement, b.arguments...)
+func (b *SQLBuilder) Scan(d interface{}) error {
+	rows, err := b.runQuery(context.Background())
+	defer rows.Close()
+
+	if err != nil {
+		return err
+	}
+
+	if rows.Next() {
+		return rows.Scan(d)
+	}
+
+	return nil
+}
+func (s *SQLBuilder) Exec(ctx context.Context) error {
+	_, err := s.sql.ExecContext(ctx, s.statement.SQL, s.statement.arguments...)
 
 	return err
 }
 
-func (b *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
-	return b.sql.QueryContext(ctx, b.Statement, b.arguments...)
+func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
+	return s.sql.QueryContext(ctx, s.statement.SQL, s.statement.arguments...)
 }

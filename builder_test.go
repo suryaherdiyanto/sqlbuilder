@@ -9,6 +9,7 @@ import (
 )
 
 var db, _ = sql.Open("sqlite3", ":memory:")
+var builder *SQLBuilder
 
 type User struct {
 	Id       int    `db:"id"`
@@ -49,7 +50,8 @@ func setupSuite(tb testing.TB) func(tb testing.TB) {
 }
 
 func TestBuilder(t *testing.T) {
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	builder.Table("users", "*")
 
@@ -59,7 +61,8 @@ func TestBuilder(t *testing.T) {
 }
 
 func TestWithWhere(t *testing.T) {
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	builder.
 		Table("users", "*").
@@ -71,7 +74,8 @@ func TestWithWhere(t *testing.T) {
 }
 
 func TestWithMultipleWhere(t *testing.T) {
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	builder.
 		Table("users", "*").
@@ -83,7 +87,8 @@ func TestWithMultipleWhere(t *testing.T) {
 }
 
 func TestWhereIn(t *testing.T) {
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	builder.Table("users", "*").Where("email IN(?, ?)", "johndoe@example.com", "amal@example.com")
 
@@ -93,7 +98,8 @@ func TestWhereIn(t *testing.T) {
 }
 
 func TestWhereBetween(t *testing.T) {
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	builder.
 		Table("users", "*").
@@ -103,7 +109,7 @@ func TestWhereBetween(t *testing.T) {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 
-	builder = NewSelect("sqlite", db)
+	builder = builder.NewSelect()
 	builder.
 		Table("users", "*").
 		Where("dob BETWEEN ? AND ?", "1995-02-01", "2000-01-01")
@@ -114,7 +120,8 @@ func TestWhereBetween(t *testing.T) {
 }
 
 func TestWhereOr(t *testing.T) {
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	builder.
 		Table("users", "*").
@@ -126,7 +133,8 @@ func TestWhereOr(t *testing.T) {
 }
 
 func TestJoin(t *testing.T) {
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	builder.
 		Table("users", "*").
@@ -138,7 +146,8 @@ func TestJoin(t *testing.T) {
 }
 
 func TestLeftJoin(t *testing.T) {
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	builder.
 		Table("users", "*").
@@ -150,7 +159,8 @@ func TestLeftJoin(t *testing.T) {
 }
 
 func TestRightJoin(t *testing.T) {
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	builder.
 		Table("users", "*").
@@ -162,7 +172,8 @@ func TestRightJoin(t *testing.T) {
 }
 
 func TestWhereExists(t *testing.T) {
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	builder.
 		Table("users", "*").
@@ -176,7 +187,8 @@ func TestWhereExists(t *testing.T) {
 }
 
 func TestWhereFuncSubquery(t *testing.T) {
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	builder.
 		Table("users", "*").
@@ -194,7 +206,8 @@ func TestExecute(t *testing.T) {
 	defer teardownSuite(t)
 
 	user := new(User)
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	err := builder.Table("users", "*").Find(user, context.Background())
 
@@ -213,7 +226,8 @@ func TestExecuteWhere(t *testing.T) {
 	defer teardownSuite(t)
 
 	user := new(User)
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	err := builder.Table("users", "*").Where("email = ?", "daniel@example.com").Limit(1).Find(user, context.Background())
 
@@ -231,7 +245,8 @@ func TestWhereAnd(t *testing.T) {
 	defer teardownSuite(t)
 
 	var users []User
-	builder := NewSelect("sqlite", db)
+	builder = New("sqlite", db)
+	builder.NewSelect()
 
 	err := builder.
 		Table("users", "*").
