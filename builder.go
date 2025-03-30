@@ -38,9 +38,9 @@ type Builder interface {
 	Table(table string, columns ...string) *SQLBuilder
 	Where(statement string, vars ...interface{}) *SQLBuilder
 	WhereFunc(statement string, b func(b Builder) *SQLBuilder) *SQLBuilder
-	Join(table string, first string, operator string, second string)
-	LeftJoin(table string, first string, operator string, second string)
-	RightJoin(table string, first string, operator string, second string)
+	Join(table string, first string, operator string, second string) *SQLBuilder
+	LeftJoin(table string, first string, operator string, second string) *SQLBuilder
+	RightJoin(table string, first string, operator string, second string) *SQLBuilder
 	OrderBy(column string, dir string) *SQLBuilder
 	GroupBy(columns ...string) *SQLBuilder
 	Limit(n int) *SQLBuilder
@@ -81,16 +81,19 @@ func (s *SQLBuilder) Where(statement string, vars ...interface{}) *SQLBuilder {
 	return s
 }
 
-func (s *SQLBuilder) Join(table string, first string, operator string, second string) {
+func (s *SQLBuilder) Join(table string, first string, operator string, second string) *SQLBuilder {
 	s.statement.SQL += fmt.Sprintf(" INNER JOIN %s ON %s %s %s", table, first, operator, second)
+	return s
 }
 
-func (s *SQLBuilder) LeftJoin(table string, first string, operator string, second string) {
+func (s *SQLBuilder) LeftJoin(table string, first string, operator string, second string) *SQLBuilder {
 	s.statement.SQL += fmt.Sprintf(" LEFT JOIN %s ON %s %s %s", table, first, operator, second)
+	return s
 }
 
-func (s *SQLBuilder) RightJoin(table string, first string, operator string, second string) {
+func (s *SQLBuilder) RightJoin(table string, first string, operator string, second string) *SQLBuilder {
 	s.statement.SQL += fmt.Sprintf(" RIGHT JOIN %s ON %s %s %s", table, first, operator, second)
+	return s
 }
 
 func (s *SQLBuilder) WhereFunc(statement string, builder func(b Builder) *SQLBuilder) *SQLBuilder {
