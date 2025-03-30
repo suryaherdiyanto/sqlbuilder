@@ -39,7 +39,7 @@ type Builder interface {
 	OrderBy(column string, dir string) *SQLBuilder
 	GroupBy(columns ...string) *SQLBuilder
 	Limit(n int) *SQLBuilder
-	Offet(n int) *SQLBuilder
+	Offset(n int) *SQLBuilder
 }
 
 func NewSelect(dialect string, db *sql.DB) *SQLBuilder {
@@ -75,6 +75,10 @@ func (b *SQLBuilder) LeftJoin(table string, first string, operator string, secon
 
 func (b *SQLBuilder) RightJoin(table string, first string, operator string, second string) {
 	b.Statement += fmt.Sprintf(" RIGHT JOIN %s ON %s %s %s", table, first, operator, second)
+}
+func (b *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	b.Statement += fmt.Sprintf(" WHERE EXISTS (%s)", builder(NewSelect(b.Dialect, b.sql)).GetSql())
+	return b
 }
 
 func (b *SQLBuilder) OrderBy(column string, dir string) *SQLBuilder {
