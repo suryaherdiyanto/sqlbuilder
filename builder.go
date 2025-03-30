@@ -33,6 +33,9 @@ type SQLBuilder struct {
 type Builder interface {
 	Table(table string, columns ...string) *SQLBuilder
 	Where(statement string, vars ...interface{}) *SQLBuilder
+	Join(table string, first string, operator string, second string)
+	LeftJoin(table string, first string, operator string, second string)
+	RightJoin(table string, first string, operator string, second string)
 	OrderBy(column string, dir string) *SQLBuilder
 	GroupBy(columns ...string) *SQLBuilder
 	Limit(n int) *SQLBuilder
@@ -60,6 +63,18 @@ func (b *SQLBuilder) Where(statement string, vars ...interface{}) *SQLBuilder {
 	b.Statement += fmt.Sprintf(" WHERE %s", statement)
 	b.arguments = append(b.arguments, vars...)
 	return b
+}
+
+func (b *SQLBuilder) Join(table string, first string, operator string, second string) {
+	b.Statement += fmt.Sprintf(" INNER JOIN %s ON %s %s %s", table, first, operator, second)
+}
+
+func (b *SQLBuilder) LeftJoin(table string, first string, operator string, second string) {
+	b.Statement += fmt.Sprintf(" LEFT JOIN %s ON %s %s %s", table, first, operator, second)
+}
+
+func (b *SQLBuilder) RightJoin(table string, first string, operator string, second string) {
+	b.Statement += fmt.Sprintf(" RIGHT JOIN %s ON %s %s %s", table, first, operator, second)
 }
 
 func (b *SQLBuilder) OrderBy(column string, dir string) *SQLBuilder {
