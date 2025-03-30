@@ -33,6 +33,7 @@ type SQLBuilder struct {
 type Builder interface {
 	Table(table string, columns ...string) *SQLBuilder
 	Where(statement string, vars ...interface{}) *SQLBuilder
+	WhereFunc(statement string, b func(b Builder) *SQLBuilder) *SQLBuilder
 	Join(table string, first string, operator string, second string)
 	LeftJoin(table string, first string, operator string, second string)
 	RightJoin(table string, first string, operator string, second string)
@@ -59,6 +60,10 @@ func (b *SQLBuilder) GetSql() string {
 	return b.Statement
 }
 
+func (b *SQLBuilder) GetArguments() []interface{} {
+	return b.arguments
+}
+
 func (b *SQLBuilder) Where(statement string, vars ...interface{}) *SQLBuilder {
 	b.Statement += fmt.Sprintf(" WHERE %s", statement)
 	b.arguments = append(b.arguments, vars...)
@@ -76,8 +81,21 @@ func (b *SQLBuilder) LeftJoin(table string, first string, operator string, secon
 func (b *SQLBuilder) RightJoin(table string, first string, operator string, second string) {
 	b.Statement += fmt.Sprintf(" RIGHT JOIN %s ON %s %s %s", table, first, operator, second)
 }
+
+func (b *SQLBuilder) WhereFunc(statement string, builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	newBuilder := builder(NewSelect(b.Dialect, b.sql))
+
+	b.Statement += fmt.Sprintf(" WHERE %s", statement)
+	b.Statement += fmt.Sprintf("(%s)", newBuilder.GetSql())
+	b.arguments = append(b.arguments, newBuilder.GetArguments()...)
+	return b
+}
+
 func (b *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder {
-	b.Statement += fmt.Sprintf(" WHERE EXISTS (%s)", builder(NewSelect(b.Dialect, b.sql)).GetSql())
+	newBuilder := builder(NewSelect(b.Dialect, b.sql))
+	b.Statement += fmt.Sprintf(" WHERE EXISTS (%s)", newBuilder.GetSql())
+	b.arguments = append(b.arguments, newBuilder.GetArguments()...)
+
 	return b
 }
 

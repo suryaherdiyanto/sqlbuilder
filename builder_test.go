@@ -175,6 +175,20 @@ func TestWhereExists(t *testing.T) {
 	}
 }
 
+func TestWhereFuncSubquery(t *testing.T) {
+	builder := NewSelect("sqlite", db)
+
+	builder.
+		Table("users", "*").
+		WhereFunc("email = ", func(b Builder) *SQLBuilder {
+			return b.Table("roles", "user_id").Where("users.id = roles.user_id")
+		})
+
+	if builder.GetSql() != "SELECT * FROM users WHERE email = (SELECT user_id FROM roles WHERE users.id = roles.user_id)" {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+}
+
 func TestExecute(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
