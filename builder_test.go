@@ -125,6 +125,42 @@ func TestWhereOr(t *testing.T) {
 	}
 }
 
+func TestJoin(t *testing.T) {
+	builder := NewSelect("sqlite", db)
+
+	builder.
+		Table("users", "*").
+		Join("roles", "users.id", "=", "roles.user_id")
+
+	if builder.GetSql() != "SELECT * FROM users INNER JOIN roles ON users.id = roles.user_id" {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+}
+
+func TestLeftJoin(t *testing.T) {
+	builder := NewSelect("sqlite", db)
+
+	builder.
+		Table("users", "*").
+		LeftJoin("roles", "users.id", "=", "roles.user_id")
+
+	if builder.GetSql() != "SELECT * FROM users LEFT JOIN roles ON users.id = roles.user_id" {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+}
+
+func TestRightJoin(t *testing.T) {
+	builder := NewSelect("sqlite", db)
+
+	builder.
+		Table("users", "*").
+		RightJoin("roles", "users.id", "=", "roles.user_id")
+
+	if builder.GetSql() != "SELECT * FROM users RIGHT JOIN roles ON users.id = roles.user_id" {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+}
+
 func TestExecute(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
