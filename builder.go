@@ -25,7 +25,6 @@ const (
 type SQLBuilder struct {
 	Dialect   string
 	sql       *sql.DB
-	hasWhere  bool
 	statement *Statement
 }
 
