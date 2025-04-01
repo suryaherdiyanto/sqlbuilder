@@ -72,13 +72,18 @@ func (s *SQLBuilder) NewSelect() *SQLBuilder {
 func (s *SQLBuilder) Insert(table string, data interface{}) error {
 
 	stmt, err := s.buildInsert(table, data)
+	if err != nil {
+		return err
+	}
 
+	args, err := s.extractData(data)
 	if err != nil {
 		return err
 	}
 
 	s.statement = &Statement{
-		SQL: stmt,
+		SQL:       stmt,
+		arguments: args,
 	}
 
 	return nil
@@ -203,6 +208,25 @@ func (s *SQLBuilder) Exec(ctx context.Context) error {
 
 func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
 	return s.sql.QueryContext(ctx, s.statement.SQL, s.statement.arguments...)
+}
+
+func (s *SQLBuilder) extractData(data interface{}) ([]interface{}, error) {
+	valRef := reflect.ValueOf(data)
+	if valRef.Kind() == reflect.Ptr {
+		valRef = valRef.Elem()
+	}
+
+	if valRef.Kind() != reflect.Struct {
+		return nil, errors.New("data must be a struct")
+	}
+
+	var result []interface{}
+	for i := 0; i < valRef.NumField(); i++ {
+		field := valRef.Field(i)
+		result = append(result, field.Interface())
+	}
+
+	return result, nil
 }
 
 func (s *SQLBuilder) buildInsert(table string, data interface{}) (string, error) {
