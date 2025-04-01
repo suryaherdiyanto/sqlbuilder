@@ -221,6 +221,32 @@ func TestExecute(t *testing.T) {
 
 }
 
+func TestInsertStatement(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	type UserRequest struct {
+		Username string `db:"username"`
+		Email    string `db:"email"`
+		Age      int    `db:"age"`
+	}
+
+	user := &UserRequest{
+		Username: "johndoe",
+		Email:    "johndoe@example.com",
+		Age:      35,
+	}
+
+	builder = New("sqlite", db)
+	builder.Insert("users", user)
+
+	expected := "INSERT INTO users(username, email, age) VALUES(?, ?, ?)"
+
+	if builder.GetSql() != expected {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+}
+
 func TestExecuteWhere(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)

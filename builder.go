@@ -3,7 +3,9 @@ package sqlbuilder
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -20,6 +22,12 @@ const (
 const (
 	whereOr  = "OR"
 	whereAnd = "AND"
+)
+
+const (
+	pgsqlPlaceholder  = "$%d"
+	mysqlPlaceholder  = "?"
+	sqlitePlaceholder = "?"
 )
 
 type SQLBuilder struct {
@@ -59,6 +67,21 @@ func (s *SQLBuilder) NewSelect() *SQLBuilder {
 	}
 	s.statement = statement
 	return s
+}
+
+func (s *SQLBuilder) Insert(table string, data interface{}) error {
+
+	stmt, err := s.buildInsert(table, data)
+
+	if err != nil {
+		return err
+	}
+
+	s.statement = &Statement{
+		SQL: stmt,
+	}
+
+	return nil
 }
 
 func (s *SQLBuilder) Table(table string, columns ...string) *SQLBuilder {
@@ -180,4 +203,41 @@ func (s *SQLBuilder) Exec(ctx context.Context) error {
 
 func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
 	return s.sql.QueryContext(ctx, s.statement.SQL, s.statement.arguments...)
+}
+
+func (s *SQLBuilder) buildInsert(table string, data interface{}) (string, error) {
+	valRef := reflect.TypeOf(data)
+	if valRef.Kind() == reflect.Ptr {
+		valRef = valRef.Elem()
+	}
+
+	if valRef.Kind() != reflect.Struct {
+		return "", errors.New("data must be a struct")
+	}
+
+	var columns []string
+	var values []string
+	placeholder := func() string {
+		switch s.Dialect {
+		case "pgsql":
+			return fmt.Sprintf(pgsqlPlaceholder, len(values)+1)
+		case "mysql":
+			return mysqlPlaceholder
+		case "sqlite":
+			return sqlitePlaceholder
+		default:
+			return mysqlPlaceholder
+		}
+	}
+
+	for i := 0; i < valRef.NumField(); i++ {
+		field := valRef.Field(i)
+		columns = append(columns, field.Tag.Get("db"))
+		values = append(values, placeholder())
+	}
+
+	columnStatement := fmt.Sprintf("%s", strings.Join(columns, ", "))
+	valuesStatement := fmt.Sprintf("%s", strings.Join(values, ", "))
+
+	return fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", table, columnStatement, valuesStatement), nil
 }
