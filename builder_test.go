@@ -178,10 +178,10 @@ func TestWhereExists(t *testing.T) {
 	builder.
 		Table("users", "*").
 		WhereExists(func(b Builder) *SQLBuilder {
-			return b.Table("roles", "user_id").Where("users.id = roles.user_id")
+			return b.Table("roles", "*").Where("users.id = roles.user_id")
 		})
 
-	if builder.GetSql() != "SELECT * FROM users WHERE EXISTS (SELECT user_id FROM roles WHERE users.id = roles.user_id)" {
+	if builder.GetSql() != "SELECT * FROM users WHERE EXISTS (SELECT * FROM roles WHERE users.id = roles.user_id)" {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 }
@@ -192,11 +192,30 @@ func TestWhereFuncSubquery(t *testing.T) {
 
 	builder.
 		Table("users", "*").
-		WhereFunc("email = ", func(b Builder) *SQLBuilder {
+		WhereFunc("email =", func(b Builder) *SQLBuilder {
 			return b.Table("roles", "user_id").Where("users.id = roles.user_id")
 		})
 
 	if builder.GetSql() != "SELECT * FROM users WHERE email = (SELECT user_id FROM roles WHERE users.id = roles.user_id)" {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+}
+
+func TestUpdateStatement(t *testing.T) {
+	builder = New("sqlite", db)
+	type UserRequest struct {
+		Username string `db:"username"`
+		Age      int    `db:"age"`
+	}
+
+	user := &UserRequest{
+		Username: "johndoe",
+		Age:      31,
+	}
+	builder.Table("users").Where("username = ?", "johndoe@gmail.com").Update(user)
+
+	expected := "UPDATE users SET username = ?, age = ? WHERE username = ?"
+	if builder.GetSql() != expected {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
 }
@@ -207,9 +226,7 @@ func TestExecute(t *testing.T) {
 
 	user := new(User)
 	builder = New("sqlite", db)
-	builder.NewSelect()
-
-	err := builder.Table("users", "*").Find(user, context.Background())
+	err := builder.NewSelect().Table("users", "*").Find(user, context.Background())
 
 	if err != nil {
 		t.Error(err)
@@ -238,9 +255,9 @@ func TestInsertStatement(t *testing.T) {
 	}
 
 	builder = New("sqlite", db)
-	builder.Insert("users", user)
+	builder.Table("users").Insert(user)
 
-	expected := "INSERT INTO users(username, email, age) VALUES(?, ?, ?)"
+	expected := "INSERT INTO users(username,email,age) VALUES(?,?,?)"
 
 	if builder.GetSql() != expected {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())

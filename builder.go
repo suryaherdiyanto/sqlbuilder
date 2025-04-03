@@ -37,8 +37,16 @@ type SQLBuilder struct {
 }
 
 type Statement struct {
-	SQL       string
-	arguments []interface{}
+	SQL          string
+	Table        string
+	Command      string
+	Columns      []string
+	Where        string
+	Joins        []string
+	arguments    []interface{}
+	values       string
+	subquery     string
+	setStatement string
 }
 
 type Builder interface {
@@ -63,15 +71,36 @@ func New(dialect string, db *sql.DB) *SQLBuilder {
 
 func (s *SQLBuilder) NewSelect() *SQLBuilder {
 	statement := &Statement{
-		SQL: "SELECT ",
+		SQL:     "SELECT ",
+		Command: "SELECT",
 	}
 	s.statement = statement
 	return s
 }
 
-func (s *SQLBuilder) Insert(table string, data interface{}) error {
+func (s *SQLBuilder) Insert(data interface{}) error {
 
-	stmt, err := s.buildInsert(table, data)
+	stmt, err := s.buildInsert(data)
+	if err != nil {
+		return err
+	}
+
+	insertData, err := s.extractData(data)
+
+	if err != nil {
+		return err
+	}
+
+	s.statement.Columns = stmt["columns"]
+	s.statement.arguments = insertData
+	s.statement.values = strings.Join(stmt["values"], ",")
+	s.statement.Command = "INSERT"
+
+	return nil
+}
+
+func (s *SQLBuilder) Update(data interface{}) error {
+	stmt, err := s.buildUpdate(data)
 	if err != nil {
 		return err
 	}
@@ -81,20 +110,56 @@ func (s *SQLBuilder) Insert(table string, data interface{}) error {
 		return err
 	}
 
-	s.statement = &Statement{
-		SQL:       stmt,
-		arguments: args,
-	}
+	s.statement.arguments = args
+	s.statement.setStatement = stmt
+	s.statement.Command = "UPDATE"
 
 	return nil
 }
 
 func (s *SQLBuilder) Table(table string, columns ...string) *SQLBuilder {
-	s.statement.SQL += fmt.Sprintf("%s FROM %s", strings.Join(columns, ","), table)
+	vRef := reflect.ValueOf(s.statement)
+	if vRef.IsZero() {
+		s.statement = &Statement{}
+	}
+
+	s.statement.Table = table
+	s.statement.Columns = columns
+
 	return s
 }
 
 func (s *SQLBuilder) GetSql() string {
+	switch s.statement.Command {
+	case "SELECT":
+		stmt := fmt.Sprintf("SELECT %s FROM %s", strings.Join(s.statement.Columns, ","), s.statement.Table)
+
+		if len(s.statement.Joins) > 0 {
+			for _, join := range s.statement.Joins {
+				stmt += fmt.Sprintf("%s", join)
+			}
+		}
+
+		if s.statement.Where != "" {
+			stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
+
+			if s.statement.subquery != "" {
+				stmt += fmt.Sprintf(" (%s)", s.statement.subquery)
+			}
+		}
+
+		s.statement.SQL = stmt
+	case "INSERT":
+		stmt := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", s.statement.Table, strings.Join(s.statement.Columns, ","), s.statement.values)
+		s.statement.SQL = stmt
+	case "UPDATE":
+		stmt := fmt.Sprintf("UPDATE %s %s", s.statement.Table, s.statement.setStatement)
+		if s.statement.Where != "" {
+			stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
+		}
+		s.statement.SQL = stmt
+	}
+
 	return s.statement.SQL
 }
 
@@ -105,36 +170,37 @@ func (s *SQLBuilder) GetArguments() []interface{} {
 func (s *SQLBuilder) Where(statement string, vars ...interface{}) *SQLBuilder {
 	s.statement.SQL += fmt.Sprintf(" WHERE %s", statement)
 	s.statement.arguments = append(s.statement.arguments, vars...)
+	s.statement.Where = statement
 	return s
 }
 
 func (s *SQLBuilder) Join(table string, first string, operator string, second string) *SQLBuilder {
-	s.statement.SQL += fmt.Sprintf(" INNER JOIN %s ON %s %s %s", table, first, operator, second)
+	s.statement.Joins = append(s.statement.Joins, fmt.Sprintf(" INNER JOIN %s ON %s %s %s", table, first, operator, second))
 	return s
 }
 
 func (s *SQLBuilder) LeftJoin(table string, first string, operator string, second string) *SQLBuilder {
-	s.statement.SQL += fmt.Sprintf(" LEFT JOIN %s ON %s %s %s", table, first, operator, second)
+	s.statement.Joins = append(s.statement.Joins, fmt.Sprintf(" LEFT JOIN %s ON %s %s %s", table, first, operator, second))
 	return s
 }
 
 func (s *SQLBuilder) RightJoin(table string, first string, operator string, second string) *SQLBuilder {
-	s.statement.SQL += fmt.Sprintf(" RIGHT JOIN %s ON %s %s %s", table, first, operator, second)
+	s.statement.Joins = append(s.statement.Joins, fmt.Sprintf(" RIGHT JOIN %s ON %s %s %s", table, first, operator, second))
 	return s
 }
 
 func (s *SQLBuilder) WhereFunc(statement string, builder func(b Builder) *SQLBuilder) *SQLBuilder {
 	newBuilder := builder(New(s.Dialect, s.sql).NewSelect())
 
-	s.statement.SQL += fmt.Sprintf(" WHERE %s", statement)
-	s.statement.SQL += fmt.Sprintf("(%s)", newBuilder.GetSql())
+	s.statement.Where = fmt.Sprintf("%s (%s)", statement, newBuilder.GetSql())
 	s.statement.arguments = append(s.statement.arguments, newBuilder.GetArguments()...)
 	return s
 }
 
 func (s *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder {
 	newBuilder := builder(New(s.Dialect, s.sql).NewSelect())
-	s.statement.SQL += fmt.Sprintf(" WHERE EXISTS (%s)", newBuilder.GetSql())
+
+	s.statement.Where = fmt.Sprintf("EXISTS (%s)", newBuilder.GetSql())
 	s.statement.arguments = append(s.statement.arguments, newBuilder.GetArguments()...)
 
 	return s
@@ -207,7 +273,7 @@ func (s *SQLBuilder) Exec(ctx context.Context) error {
 }
 
 func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
-	return s.sql.QueryContext(ctx, s.statement.SQL, s.statement.arguments...)
+	return s.sql.QueryContext(ctx, s.GetSql(), s.statement.arguments...)
 }
 
 func (s *SQLBuilder) extractData(data interface{}) ([]interface{}, error) {
@@ -229,14 +295,14 @@ func (s *SQLBuilder) extractData(data interface{}) ([]interface{}, error) {
 	return result, nil
 }
 
-func (s *SQLBuilder) buildInsert(table string, data interface{}) (string, error) {
+func (s *SQLBuilder) buildInsert(data interface{}) (map[string][]string, error) {
 	valRef := reflect.TypeOf(data)
 	if valRef.Kind() == reflect.Ptr {
 		valRef = valRef.Elem()
 	}
 
 	if valRef.Kind() != reflect.Struct {
-		return "", errors.New("data must be a struct")
+		return make(map[string][]string), errors.New("data must be a struct")
 	}
 
 	var columns []string
@@ -260,8 +326,42 @@ func (s *SQLBuilder) buildInsert(table string, data interface{}) (string, error)
 		values = append(values, placeholder())
 	}
 
-	columnStatement := fmt.Sprintf("%s", strings.Join(columns, ", "))
-	valuesStatement := fmt.Sprintf("%s", strings.Join(values, ", "))
+	return map[string][]string{
+		"columns": columns,
+		"values":  values,
+	}, nil
+}
 
-	return fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", table, columnStatement, valuesStatement), nil
+func (s *SQLBuilder) buildUpdate(data interface{}) (string, error) {
+	valRef := reflect.TypeOf(data)
+	if valRef.Kind() == reflect.Ptr {
+		valRef = valRef.Elem()
+	}
+
+	if valRef.Kind() != reflect.Struct {
+		return "", errors.New("data must be a struct")
+	}
+
+	var set []string
+	placeholder := func() string {
+		switch s.Dialect {
+		case "pgsql":
+			return fmt.Sprintf(pgsqlPlaceholder, len(set)+1)
+		case "mysql":
+			return mysqlPlaceholder
+		case "sqlite":
+			return sqlitePlaceholder
+		default:
+			return mysqlPlaceholder
+		}
+	}
+
+	for i := 0; i < valRef.NumField(); i++ {
+		field := valRef.Field(i)
+		set = append(set, fmt.Sprintf("%s = %s", field.Tag.Get("db"), placeholder()))
+	}
+
+	setStatement := fmt.Sprintf("%s", strings.Join(set, ", "))
+
+	return fmt.Sprintf("SET %s", setStatement), nil
 }
