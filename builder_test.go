@@ -220,6 +220,16 @@ func TestUpdateStatement(t *testing.T) {
 	}
 }
 
+func TestDeleteStatement(t *testing.T) {
+	builder = New("sqlite", db)
+	builder.Table("users").Where("username = ?", "johndoe").Delete()
+
+	expected := "DELETE FROM users WHERE username = ?"
+	if builder.GetSql() != expected {
+		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+}
+
 func TestExecute(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
