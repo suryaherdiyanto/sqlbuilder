@@ -236,12 +236,27 @@ func TestExecuteUpdateStatement(t *testing.T) {
 }
 
 func TestDeleteStatement(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
 	builder = New("sqlite", db)
-	builder.Table("users").Where("username = ?", "johndoe").Delete()
+	result, err := builder.Table("users").Where("username = ?", "johndoe").Delete()
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	expected := "DELETE FROM users WHERE username = ?"
 	if builder.GetSql() != expected {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+
+	if rowsAffected, err := result.RowsAffected(); err != nil {
+		t.Error(err)
+
+		if rowsAffected <= 0 {
+			t.Errorf("Expected rows affected to be greater than 0, but got: %d", rowsAffected)
+		}
 	}
 }
 

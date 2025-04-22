@@ -104,9 +104,10 @@ func (s *SQLBuilder) Update(data interface{}) (sql.Result, error) {
 	return s.Exec(ctx)
 }
 
-func (s *SQLBuilder) Delete() *SQLBuilder {
+func (s *SQLBuilder) Delete() (sql.Result, error) {
 	s.statement.Command = "DELETE"
-	return nil
+	ctx := context.Background()
+	return s.Exec(ctx)
 }
 
 func (s *SQLBuilder) Table(table string, columns ...string) *SQLBuilder {
