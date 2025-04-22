@@ -10,21 +10,6 @@ import (
 )
 
 const (
-	Eq   = "="
-	Lte  = "<="
-	Lt   = "<"
-	Gte  = ">="
-	Gt   = ">"
-	Desc = "DESC"
-	Asc  = "ASC"
-)
-
-const (
-	whereOr  = "OR"
-	whereAnd = "AND"
-)
-
-const (
 	pgsqlPlaceholder  = "$%d"
 	mysqlPlaceholder  = "?"
 	sqlitePlaceholder = "?"
@@ -117,6 +102,11 @@ func (s *SQLBuilder) Update(data interface{}) error {
 	return nil
 }
 
+func (s *SQLBuilder) Delete() *SQLBuilder {
+	s.statement.Command = "DELETE"
+	return nil
+}
+
 func (s *SQLBuilder) Table(table string, columns ...string) *SQLBuilder {
 	vRef := reflect.ValueOf(s.statement)
 	if vRef.IsZero() {
@@ -154,6 +144,12 @@ func (s *SQLBuilder) GetSql() string {
 		s.statement.SQL = stmt
 	case "UPDATE":
 		stmt := fmt.Sprintf("UPDATE %s %s", s.statement.Table, s.statement.setStatement)
+		if s.statement.Where != "" {
+			stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
+		}
+		s.statement.SQL = stmt
+	case "DELETE":
+		stmt := fmt.Sprintf("DELETE FROM %s", s.statement.Table)
 		if s.statement.Where != "" {
 			stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
 		}
