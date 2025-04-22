@@ -18,6 +18,8 @@ const (
 type SQLBuilder struct {
 	Dialect   string
 	sql       *sql.DB
+	tx        *sql.Tx
+	isTx      bool
 	statement *Statement
 }
 
@@ -52,6 +54,34 @@ func New(dialect string, db *sql.DB) *SQLBuilder {
 		Dialect: dialect,
 		sql:     db,
 	}
+}
+
+func (s *SQLBuilder) Begin(tx func(s *SQLBuilder) error) error {
+	transaction, err := s.sql.Begin()
+	if err != nil {
+		return err
+	}
+
+	builder := &SQLBuilder{
+		tx:   transaction,
+		isTx: true,
+	}
+
+	err = tx(builder)
+
+	if err != nil {
+		if rollbackErr := transaction.Rollback(); rollbackErr != nil {
+			return rollbackErr
+		}
+
+		return err
+	}
+
+	if err = transaction.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *SQLBuilder) NewSelect() *SQLBuilder {
@@ -266,10 +296,18 @@ func (b *SQLBuilder) Scan(d interface{}) error {
 	return nil
 }
 func (s *SQLBuilder) Exec(ctx context.Context) (sql.Result, error) {
+	if s.isTx {
+		return s.tx.ExecContext(ctx, s.GetSql(), s.statement.arguments...)
+	}
+
 	return s.sql.ExecContext(ctx, s.GetSql(), s.statement.arguments...)
 }
 
 func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
+	if s.isTx {
+		return s.tx.QueryContext(ctx, s.GetSql(), s.statement.arguments...)
+	}
+
 	return s.sql.QueryContext(ctx, s.GetSql(), s.statement.arguments...)
 }
 

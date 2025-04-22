@@ -260,6 +260,54 @@ func TestDeleteStatement(t *testing.T) {
 	}
 }
 
+func TestExecuteTransaction(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	builder = New("sqlite", db)
+	err := builder.Begin(func(b *SQLBuilder) error {
+		type UserRequest struct {
+			Username string `db:"username"`
+			Age      int    `db:"age"`
+			Email    string `db:"email"`
+		}
+		user := &UserRequest{
+			Username: "johncena",
+			Email:    "johncena@example.com",
+			Age:      35,
+		}
+		result, err := b.Table("users").Insert(user)
+
+		if err != nil {
+			return err
+		}
+
+		newUser := &User{}
+		id, err := result.LastInsertId()
+		if err != nil {
+			return err
+		}
+
+		if err = b.NewSelect().Table("users", "*").Where("id = ?", id).Find(newUser, context.Background()); err != nil {
+			return err
+		}
+
+		type UpdateRequest struct {
+			Age int `db:"age"`
+		}
+		update := &UpdateRequest{Age: 40}
+		if _, err = b.Table("users").Where("id = ?", id).Update(update); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func TestExecute(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
