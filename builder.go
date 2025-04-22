@@ -85,22 +85,23 @@ func (s *SQLBuilder) Insert(data interface{}) (sql.Result, error) {
 	return s.Exec(ctx)
 }
 
-func (s *SQLBuilder) Update(data interface{}) error {
+func (s *SQLBuilder) Update(data interface{}) (sql.Result, error) {
 	stmt, err := s.buildUpdate(data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	args, err := s.extractData(data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	s.statement.arguments = args
+	s.statement.arguments = append(s.statement.arguments, args...)
 	s.statement.setStatement = stmt
 	s.statement.Command = "UPDATE"
+	ctx := context.Background()
 
-	return nil
+	return s.Exec(ctx)
 }
 
 func (s *SQLBuilder) Delete() *SQLBuilder {
@@ -264,7 +265,7 @@ func (b *SQLBuilder) Scan(d interface{}) error {
 	return nil
 }
 func (s *SQLBuilder) Exec(ctx context.Context) (sql.Result, error) {
-	return s.sql.ExecContext(ctx, s.statement.SQL, s.statement.arguments...)
+	return s.sql.ExecContext(ctx, s.GetSql(), s.statement.arguments...)
 }
 
 func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {

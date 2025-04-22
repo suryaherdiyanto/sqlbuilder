@@ -201,7 +201,10 @@ func TestWhereFuncSubquery(t *testing.T) {
 	}
 }
 
-func TestUpdateStatement(t *testing.T) {
+func TestExecuteUpdateStatement(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
 	builder = New("sqlite", db)
 	type UserRequest struct {
 		Username string `db:"username"`
@@ -212,11 +215,23 @@ func TestUpdateStatement(t *testing.T) {
 		Username: "johndoe",
 		Age:      31,
 	}
-	builder.Table("users").Where("username = ?", "johndoe@gmail.com").Update(user)
+	result, err := builder.Table("users").Where("id = ?", 1).Update(user)
 
-	expected := "UPDATE users SET username = ?, age = ? WHERE username = ?"
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := "UPDATE users SET username = ?, age = ? WHERE id = ?"
 	if builder.GetSql() != expected {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+
+	if rowsAffected, err := result.RowsAffected(); err != nil {
+		t.Error(err)
+
+		if rowsAffected <= 0 {
+			t.Errorf("Expected rows affected to be greater than 0, but got: %d", rowsAffected)
+		}
 	}
 }
 
