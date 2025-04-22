@@ -152,7 +152,7 @@ func (s *SQLBuilder) Table(table string, columns ...string) *SQLBuilder {
 	return s
 }
 
-func (s *SQLBuilder) GetSql() string {
+func (s *SQLBuilder) GetSql() (string, error) {
 	switch s.statement.Command {
 	case "SELECT":
 		stmt := fmt.Sprintf("SELECT %s FROM %s", strings.Join(s.statement.Columns, ","), s.statement.Table)
@@ -187,9 +187,11 @@ func (s *SQLBuilder) GetSql() string {
 			stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
 		}
 		s.statement.SQL = stmt
+	default:
+		return "", errors.New("Invalid command")
 	}
 
-	return s.statement.SQL
+	return s.statement.SQL, nil
 }
 
 func (s *SQLBuilder) GetArguments() []interface{} {
@@ -221,7 +223,8 @@ func (s *SQLBuilder) RightJoin(table string, first string, operator string, seco
 func (s *SQLBuilder) WhereFunc(statement string, builder func(b Builder) *SQLBuilder) *SQLBuilder {
 	newBuilder := builder(New(s.Dialect, s.sql).NewSelect())
 
-	s.statement.Where = fmt.Sprintf("%s (%s)", statement, newBuilder.GetSql())
+	sql, _ := newBuilder.GetSql()
+	s.statement.Where = fmt.Sprintf("%s (%s)", statement, sql)
 	s.statement.arguments = append(s.statement.arguments, newBuilder.GetArguments()...)
 	return s
 }
@@ -229,7 +232,8 @@ func (s *SQLBuilder) WhereFunc(statement string, builder func(b Builder) *SQLBui
 func (s *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder {
 	newBuilder := builder(New(s.Dialect, s.sql).NewSelect())
 
-	s.statement.Where = fmt.Sprintf("EXISTS (%s)", newBuilder.GetSql())
+	sql, _ := newBuilder.GetSql()
+	s.statement.Where = fmt.Sprintf("EXISTS (%s)", sql)
 	s.statement.arguments = append(s.statement.arguments, newBuilder.GetArguments()...)
 
 	return s
@@ -254,11 +258,11 @@ func (s *SQLBuilder) Offset(n int) *SQLBuilder {
 
 func (s *SQLBuilder) Find(d interface{}, ctx context.Context) error {
 	rows, err := s.runQuery(ctx)
-	defer rows.Close()
-
 	if err != nil {
 		return err
 	}
+
+	defer rows.Close()
 
 	if rows.Next() {
 		return ScanStruct(d, rows)
@@ -269,11 +273,11 @@ func (s *SQLBuilder) Find(d interface{}, ctx context.Context) error {
 }
 func (b *SQLBuilder) Get(d interface{}, ctx context.Context) error {
 	rows, err := b.runQuery(ctx)
-	defer rows.Close()
-
 	if err != nil {
 		return err
 	}
+
+	defer rows.Close()
 
 	if err = ScanAll(d, rows); err != nil {
 		return err
@@ -296,19 +300,29 @@ func (b *SQLBuilder) Scan(d interface{}) error {
 	return nil
 }
 func (s *SQLBuilder) Exec(ctx context.Context) (sql.Result, error) {
-	if s.isTx {
-		return s.tx.ExecContext(ctx, s.GetSql(), s.statement.arguments...)
+	statement, err := s.GetSql()
+	if err != nil {
+		return nil, err
 	}
 
-	return s.sql.ExecContext(ctx, s.GetSql(), s.statement.arguments...)
+	if s.isTx {
+		return s.tx.ExecContext(ctx, statement, s.statement.arguments...)
+	}
+
+	return s.sql.ExecContext(ctx, statement, s.statement.arguments...)
 }
 
 func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
-	if s.isTx {
-		return s.tx.QueryContext(ctx, s.GetSql(), s.statement.arguments...)
+	sql, err := s.GetSql()
+	if err != nil {
+		return nil, err
 	}
 
-	return s.sql.QueryContext(ctx, s.GetSql(), s.statement.arguments...)
+	if s.isTx {
+		return s.tx.QueryContext(ctx, sql, s.statement.arguments...)
+	}
+
+	return s.sql.QueryContext(ctx, sql, s.statement.arguments...)
 }
 
 func (s *SQLBuilder) extractData(data interface{}) ([]interface{}, error) {

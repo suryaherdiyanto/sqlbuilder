@@ -55,8 +55,8 @@ func TestBuilder(t *testing.T) {
 
 	builder.Table("users", "*")
 
-	if builder.GetSql() != "SELECT * FROM users" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
@@ -68,8 +68,8 @@ func TestWithWhere(t *testing.T) {
 		Table("users", "*").
 		Where("email = ?", "johndoe@gmail.com")
 
-	if builder.GetSql() != "SELECT * FROM users WHERE email = ?" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email = ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
@@ -81,8 +81,8 @@ func TestWithMultipleWhere(t *testing.T) {
 		Table("users", "*").
 		Where("email = ? AND access_role < ?", "johndoe@gmail.com", 3)
 
-	if builder.GetSql() != "SELECT * FROM users WHERE email = ? AND access_role < ?" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email = ? AND access_role < ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
@@ -92,8 +92,8 @@ func TestWhereIn(t *testing.T) {
 
 	builder.Table("users", "*").Where("email IN(?, ?)", "johndoe@example.com", "amal@example.com")
 
-	if builder.GetSql() != "SELECT * FROM users WHERE email IN(?, ?)" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email IN(?, ?)" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
@@ -105,8 +105,8 @@ func TestWhereBetween(t *testing.T) {
 		Table("users", "*").
 		Where("age BETWEEN ? AND ?", 5, 10)
 
-	if builder.GetSql() != "SELECT * FROM users WHERE age BETWEEN ? AND ?" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE age BETWEEN ? AND ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 
 	builder = builder.NewSelect()
@@ -114,8 +114,8 @@ func TestWhereBetween(t *testing.T) {
 		Table("users", "*").
 		Where("dob BETWEEN ? AND ?", "1995-02-01", "2000-01-01")
 
-	if builder.GetSql() != "SELECT * FROM users WHERE dob BETWEEN ? AND ?" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE dob BETWEEN ? AND ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
@@ -127,8 +127,8 @@ func TestWhereOr(t *testing.T) {
 		Table("users", "*").
 		Where("age >= ? OR email = ?", 18, "johndoe@example.com")
 
-	if builder.GetSql() != "SELECT * FROM users WHERE age >= ? OR email = ?" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE age >= ? OR email = ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
@@ -140,8 +140,8 @@ func TestJoin(t *testing.T) {
 		Table("users", "*").
 		Join("roles", "users.id", "=", "roles.user_id")
 
-	if builder.GetSql() != "SELECT * FROM users INNER JOIN roles ON users.id = roles.user_id" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users INNER JOIN roles ON users.id = roles.user_id" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
@@ -153,8 +153,8 @@ func TestLeftJoin(t *testing.T) {
 		Table("users", "*").
 		LeftJoin("roles", "users.id", "=", "roles.user_id")
 
-	if builder.GetSql() != "SELECT * FROM users LEFT JOIN roles ON users.id = roles.user_id" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users LEFT JOIN roles ON users.id = roles.user_id" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
@@ -166,8 +166,8 @@ func TestRightJoin(t *testing.T) {
 		Table("users", "*").
 		RightJoin("roles", "users.id", "=", "roles.user_id")
 
-	if builder.GetSql() != "SELECT * FROM users RIGHT JOIN roles ON users.id = roles.user_id" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users RIGHT JOIN roles ON users.id = roles.user_id" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
@@ -181,8 +181,8 @@ func TestWhereExists(t *testing.T) {
 			return b.Table("roles", "*").Where("users.id = roles.user_id")
 		})
 
-	if builder.GetSql() != "SELECT * FROM users WHERE EXISTS (SELECT * FROM roles WHERE users.id = roles.user_id)" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE EXISTS (SELECT * FROM roles WHERE users.id = roles.user_id)" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
@@ -196,8 +196,8 @@ func TestWhereFuncSubquery(t *testing.T) {
 			return b.Table("roles", "user_id").Where("users.id = roles.user_id")
 		})
 
-	if builder.GetSql() != "SELECT * FROM users WHERE email = (SELECT user_id FROM roles WHERE users.id = roles.user_id)" {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email = (SELECT user_id FROM roles WHERE users.id = roles.user_id)" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
@@ -222,8 +222,8 @@ func TestExecuteUpdateStatement(t *testing.T) {
 	}
 
 	expected := "UPDATE users SET username = ?, age = ? WHERE id = ?"
-	if builder.GetSql() != expected {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != expected {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 
 	if rowsAffected, err := result.RowsAffected(); err != nil {
@@ -247,8 +247,8 @@ func TestDeleteStatement(t *testing.T) {
 	}
 
 	expected := "DELETE FROM users WHERE username = ?"
-	if builder.GetSql() != expected {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != expected {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 
 	if rowsAffected, err := result.RowsAffected(); err != nil {
@@ -351,8 +351,8 @@ func TestExecuteInsert(t *testing.T) {
 
 	expected := "INSERT INTO users(username,email,age) VALUES(?,?,?)"
 
-	if builder.GetSql() != expected {
-		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
+	if sql, _ := builder.GetSql(); sql != expected {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 
 	if id, err := result.LastInsertId(); err != nil {
