@@ -248,7 +248,7 @@ func TestExecute(t *testing.T) {
 
 }
 
-func TestInsertStatement(t *testing.T) {
+func TestExecuteInsert(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
 
@@ -265,13 +265,26 @@ func TestInsertStatement(t *testing.T) {
 	}
 
 	builder = New("sqlite", db)
-	builder.Table("users").Insert(user)
+	result, err := builder.Table("users").Insert(user)
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	expected := "INSERT INTO users(username,email,age) VALUES(?,?,?)"
 
 	if builder.GetSql() != expected {
 		t.Errorf("Unexpected SQL result, got: %s", builder.GetSql())
 	}
+
+	if id, err := result.LastInsertId(); err != nil {
+		t.Error(err)
+
+		if id <= 0 {
+			t.Errorf("Expected last insert id to be greater than 0, but got: %d", id)
+		}
+	}
+
 }
 
 func TestExecuteWhere(t *testing.T) {

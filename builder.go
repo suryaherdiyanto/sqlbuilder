@@ -63,17 +63,17 @@ func (s *SQLBuilder) NewSelect() *SQLBuilder {
 	return s
 }
 
-func (s *SQLBuilder) Insert(data interface{}) error {
+func (s *SQLBuilder) Insert(data interface{}) (sql.Result, error) {
 
 	stmt, err := s.buildInsert(data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	insertData, err := s.extractData(data)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	s.statement.Columns = stmt["columns"]
@@ -81,7 +81,8 @@ func (s *SQLBuilder) Insert(data interface{}) error {
 	s.statement.values = strings.Join(stmt["values"], ",")
 	s.statement.Command = "INSERT"
 
-	return nil
+	ctx := context.Background()
+	return s.Exec(ctx)
 }
 
 func (s *SQLBuilder) Update(data interface{}) error {
@@ -262,10 +263,8 @@ func (b *SQLBuilder) Scan(d interface{}) error {
 
 	return nil
 }
-func (s *SQLBuilder) Exec(ctx context.Context) error {
-	_, err := s.sql.ExecContext(ctx, s.statement.SQL, s.statement.arguments...)
-
-	return err
+func (s *SQLBuilder) Exec(ctx context.Context) (sql.Result, error) {
+	return s.sql.ExecContext(ctx, s.statement.SQL, s.statement.arguments...)
 }
 
 func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
