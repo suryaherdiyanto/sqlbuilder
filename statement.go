@@ -87,6 +87,29 @@ func (w *WhereIn) Parse() string {
 	return fmt.Sprintf("%s IN(%s)", w.Field, inValues)
 }
 
+type WhereNotIn struct {
+	Field  string
+	Values []any
+}
+
+func (w *WhereNotIn) Parse() string {
+	inValues := ""
+	for i, v := range w.Values {
+		switch v.(type) {
+		case string:
+			inValues += fmt.Sprintf("'%s'", v)
+		default:
+			inValues += fmt.Sprintf("%v", v)
+		}
+
+		if i < len(w.Values)-1 {
+			inValues += ","
+		}
+	}
+	return fmt.Sprintf("%s NOT IN(%s)", w.Field, inValues)
+
+}
+
 type Join struct {
 	Type       JoinType
 	OtherTable string
@@ -110,16 +133,17 @@ func (o *Order) Parse() string {
 }
 
 type SelectStatement struct {
-	Table           string
-	Columns         []string
-	WhereStatements []Where
-	WhereIn         WhereIn
-	Joins           []Join
-	SubQueries      []SubQuery
-	Ordering        Order
-	Limit           int64
-	Offset          int64
-	setStatement    string
+	Table               string
+	Columns             []string
+	WhereStatements     []Where
+	WhereInStatement    WhereIn
+	WhereNotInStatement WhereNotIn
+	Joins               []Join
+	SubQueries          []SubQuery
+	Ordering            Order
+	Limit               int64
+	Offset              int64
+	setStatement        string
 }
 
 func (s *SelectStatement) Parse() string {
@@ -129,6 +153,20 @@ func (s *SelectStatement) Parse() string {
 
 	for _, v := range s.WhereStatements {
 		stmt += v.Parse()
+	}
+
+	if s.WhereInStatement.Field != "" || len(s.WhereInStatement.Values) > 0 {
+		if len(s.WhereStatements) > 0 {
+			stmt += " AND "
+		}
+		stmt += s.WhereInStatement.Parse()
+	}
+
+	if s.WhereNotInStatement.Field != "" || len(s.WhereNotInStatement.Values) > 0 {
+		if len(s.WhereStatements) > 0 || s.WhereInStatement.Field != "" {
+			stmt += " AND "
+		}
+		stmt += s.WhereNotInStatement.Parse()
 	}
 
 	if s.Ordering != (Order{}) {

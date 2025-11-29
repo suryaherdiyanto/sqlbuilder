@@ -105,3 +105,39 @@ func TestSimpleStatementWithLimitAndOffset(t *testing.T) {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 }
+
+func TestStatementWhereIn(t *testing.T) {
+	statement := SelectStatement{
+		Table:   "users",
+		Columns: []string{"id", "email", "name"},
+		WhereInStatement: WhereIn{
+			Field:  "email",
+			Values: []any{"johndoe@gmail.com", "test@example.com"},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "SELECT id,email,name FROM users WHERE email IN('johndoe@gmail.com','test@example.com')"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
+func TestStatementWhereNotIn(t *testing.T) {
+	statement := SelectStatement{
+		Table:   "users",
+		Columns: []string{"id", "email", "name"},
+		WhereNotInStatement: WhereNotIn{
+			Field:  "email",
+			Values: []any{"johndoe@gmail.com", "test@example.com"},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "SELECT id,email,name FROM users WHERE email NOT IN('johndoe@gmail.com','test@example.com')"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
