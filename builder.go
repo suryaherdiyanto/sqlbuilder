@@ -23,19 +23,6 @@ type SQLBuilder struct {
 	statement *Statement
 }
 
-type Statement struct {
-	SQL          string
-	Table        string
-	Command      string
-	Columns      []string
-	Where        string
-	Joins        []string
-	arguments    []interface{}
-	values       string
-	subquery     string
-	setStatement string
-}
-
 type Builder interface {
 	Table(table string, columns ...string) *SQLBuilder
 	Where(statement string, vars ...interface{}) *SQLBuilder
@@ -100,15 +87,13 @@ func (s *SQLBuilder) Insert(data interface{}) (sql.Result, error) {
 		return nil, err
 	}
 
-	insertData, err := s.extractData(data)
-
 	if err != nil {
 		return nil, err
 	}
 
 	s.statement.Columns = stmt["columns"]
-	s.statement.arguments = insertData
-	s.statement.values = strings.Join(stmt["values"], ",")
+	// s.statement.arguments = insertData
+	// s.statement.values = strings.Join(stmt["values"], ",")
 	s.statement.Command = "INSERT"
 
 	ctx := context.Background()
@@ -121,12 +106,12 @@ func (s *SQLBuilder) Update(data interface{}) (sql.Result, error) {
 		return nil, err
 	}
 
-	args, err := s.extractData(data)
+	// args, err := s.extractData(data)
 	if err != nil {
 		return nil, err
 	}
 
-	s.statement.arguments = append(s.statement.arguments, args...)
+	// s.statement.arguments = append(s.statement.arguments, args...)
 	s.statement.setStatement = stmt
 	s.statement.Command = "UPDATE"
 	ctx := context.Background()
@@ -141,118 +126,118 @@ func (s *SQLBuilder) Delete() (sql.Result, error) {
 }
 
 func (s *SQLBuilder) Table(table string, columns ...string) *SQLBuilder {
-	vRef := reflect.ValueOf(s.statement)
-	if vRef.IsZero() {
-		s.statement = &Statement{}
-	}
+	// vRef := reflect.ValueOf(s.statement)
+	// if vRef.IsZero() {
+	// 	s.statement = &Statement{}
+	// }
 
-	s.statement.Table = table
-	s.statement.Columns = columns
+	// s.statement.Table = table
+	// s.statement.Columns = columns
 
 	return s
 }
 
 func (s *SQLBuilder) GetSql() (string, error) {
-	switch s.statement.Command {
-	case "SELECT":
-		stmt := fmt.Sprintf("SELECT %s FROM %s", strings.Join(s.statement.Columns, ","), s.statement.Table)
+	// switch s.statement.Command {
+	// case "SELECT":
+	// 	stmt := fmt.Sprintf("SELECT %s FROM %s", strings.Join(s.statement.Columns, ","), s.statement.Table)
 
-		if len(s.statement.Joins) > 0 {
-			for _, join := range s.statement.Joins {
-				stmt += fmt.Sprintf("%s", join)
-			}
-		}
+	// 	if len(s.statement.Joins) > 0 {
+	// 		for _, join := range s.statement.Joins {
+	// 			stmt += fmt.Sprintf("%s", join)
+	// 		}
+	// 	}
 
-		if s.statement.Where != "" {
-			stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
+	// 	if s.statement.Where != "" {
+	// 		stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
 
-			if s.statement.subquery != "" {
-				stmt += fmt.Sprintf(" (%s)", s.statement.subquery)
-			}
-		}
+	// 		if s.statement.subquery != "" {
+	// 			stmt += fmt.Sprintf(" (%s)", s.statement.subquery)
+	// 		}
+	// 	}
 
-		s.statement.SQL = stmt
-	case "INSERT":
-		stmt := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", s.statement.Table, strings.Join(s.statement.Columns, ","), s.statement.values)
-		s.statement.SQL = stmt
-	case "UPDATE":
-		stmt := fmt.Sprintf("UPDATE %s %s", s.statement.Table, s.statement.setStatement)
-		if s.statement.Where != "" {
-			stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
-		}
-		s.statement.SQL = stmt
-	case "DELETE":
-		stmt := fmt.Sprintf("DELETE FROM %s", s.statement.Table)
-		if s.statement.Where != "" {
-			stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
-		}
-		s.statement.SQL = stmt
-	default:
-		return "", errors.New("Invalid command")
-	}
+	// 	s.statement.SQL = stmt
+	// case "INSERT":
+	// 	stmt := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", s.statement.Table, strings.Join(s.statement.Columns, ","), s.statement.values)
+	// 	s.statement.SQL = stmt
+	// case "UPDATE":
+	// 	stmt := fmt.Sprintf("UPDATE %s %s", s.statement.Table, s.statement.setStatement)
+	// 	if s.statement.Where != "" {
+	// 		stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
+	// 	}
+	// 	s.statement.SQL = stmt
+	// case "DELETE":
+	// 	stmt := fmt.Sprintf("DELETE FROM %s", s.statement.Table)
+	// 	if s.statement.Where != "" {
+	// 		stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
+	// 	}
+	// 	s.statement.SQL = stmt
+	// default:
+	// 	return "", errors.New("Invalid command")
+	// }
 
 	return s.statement.SQL, nil
 }
 
 func (s *SQLBuilder) GetArguments() []interface{} {
-	return s.statement.arguments
+	return make([]interface{}, 0)
 }
 
 func (s *SQLBuilder) Where(statement string, vars ...interface{}) *SQLBuilder {
-	s.statement.SQL += fmt.Sprintf(" WHERE %s", statement)
-	s.statement.arguments = append(s.statement.arguments, vars...)
-	s.statement.Where = statement
+	// s.statement.SQL += fmt.Sprintf(" WHERE %s", statement)
+	// s.statement.arguments = append(s.statement.arguments, vars...)
+	// s.statement.Where = statement
 	return s
 }
 
 func (s *SQLBuilder) Join(table string, first string, operator string, second string) *SQLBuilder {
-	s.statement.Joins = append(s.statement.Joins, fmt.Sprintf(" INNER JOIN %s ON %s %s %s", table, first, operator, second))
+	// s.statement.Joins = append(s.statement.Joins, fmt.Sprintf(" INNER JOIN %s ON %s %s %s", table, first, operator, second))
 	return s
 }
 
 func (s *SQLBuilder) LeftJoin(table string, first string, operator string, second string) *SQLBuilder {
-	s.statement.Joins = append(s.statement.Joins, fmt.Sprintf(" LEFT JOIN %s ON %s %s %s", table, first, operator, second))
+	// s.statement.Joins = append(s.statement.Joins, fmt.Sprintf(" LEFT JOIN %s ON %s %s %s", table, first, operator, second))
 	return s
 }
 
 func (s *SQLBuilder) RightJoin(table string, first string, operator string, second string) *SQLBuilder {
-	s.statement.Joins = append(s.statement.Joins, fmt.Sprintf(" RIGHT JOIN %s ON %s %s %s", table, first, operator, second))
+	// s.statement.Joins = append(s.statement.Joins, fmt.Sprintf(" RIGHT JOIN %s ON %s %s %s", table, first, operator, second))
 	return s
 }
 
 func (s *SQLBuilder) WhereFunc(statement string, builder func(b Builder) *SQLBuilder) *SQLBuilder {
-	newBuilder := builder(New(s.Dialect, s.sql).NewSelect())
+	// newBuilder := builder(New(s.Dialect, s.sql).NewSelect())
 
-	sql, _ := newBuilder.GetSql()
-	s.statement.Where = fmt.Sprintf("%s (%s)", statement, sql)
-	s.statement.arguments = append(s.statement.arguments, newBuilder.GetArguments()...)
+	// sql, _ := newBuilder.GetSql()
+	// s.statement.Where = fmt.Sprintf("%s (%s)", statement, sql)
+	// s.statement.arguments = append(s.statement.arguments, newBuilder.GetArguments()...)
 	return s
 }
 
 func (s *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder {
-	newBuilder := builder(New(s.Dialect, s.sql).NewSelect())
+	// newBuilder := builder(New(s.Dialect, s.sql).NewSelect())
 
-	sql, _ := newBuilder.GetSql()
-	s.statement.Where = fmt.Sprintf("EXISTS (%s)", sql)
-	s.statement.arguments = append(s.statement.arguments, newBuilder.GetArguments()...)
+	// sql, _ := newBuilder.GetSql()
+	// s.statement.Where = fmt.Sprintf("EXISTS (%s)", sql)
+	// s.statement.arguments = append(s.statement.arguments, newBuilder.GetArguments()...)
 
 	return s
 }
 
 func (s *SQLBuilder) OrderBy(column string, dir string) *SQLBuilder {
-	s.statement.SQL += fmt.Sprintf(" ORDER BY %s %s", column, dir)
+	// s.statement.SQL += fmt.Sprintf(" ORDER BY %s %s", column, dir)
 	return s
 }
 func (s *SQLBuilder) GroupBy(columns ...string) *SQLBuilder {
-	s.statement.SQL += fmt.Sprintf(" GROUP BY %s", strings.Join(columns, ", "))
+	// s.statement.SQL += fmt.Sprintf(" GROUP BY %s", strings.Join(columns, ", "))
 	return s
 }
 func (s *SQLBuilder) Limit(n int) *SQLBuilder {
-	s.statement.SQL += fmt.Sprintf(" LIMIT %d", n)
+	// s.statement.SQL += fmt.Sprintf(" LIMIT %d", n)
 	return s
 }
 func (s *SQLBuilder) Offset(n int) *SQLBuilder {
-	s.statement.SQL += fmt.Sprintf(" OFFSET %d", n)
+	// s.statement.SQL += fmt.Sprintf(" OFFSET %d", n)
 	return s
 }
 
@@ -306,10 +291,11 @@ func (s *SQLBuilder) Exec(ctx context.Context) (sql.Result, error) {
 	}
 
 	if s.isTx {
-		return s.tx.ExecContext(ctx, statement, s.statement.arguments...)
+		// return s.tx.ExecContext(ctx, statement, s.statement.arguments...)
 	}
 
-	return s.sql.ExecContext(ctx, statement, s.statement.arguments...)
+	// return s.sql.ExecContext(ctx, statement, s.statement.arguments...)
+	return s.sql.ExecContext(ctx, statement)
 }
 
 func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
@@ -319,10 +305,11 @@ func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
 	}
 
 	if s.isTx {
-		return s.tx.QueryContext(ctx, sql, s.statement.arguments...)
+		// return s.tx.QueryContext(ctx, sql, s.statement.arguments...)
 	}
 
-	return s.sql.QueryContext(ctx, sql, s.statement.arguments...)
+	// return s.sql.QueryContext(ctx, sql, s.statement.arguments...)
+	return s.sql.QueryContext(ctx, sql)
 }
 
 func (s *SQLBuilder) extractData(data interface{}) ([]interface{}, error) {
