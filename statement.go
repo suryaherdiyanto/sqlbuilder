@@ -55,14 +55,18 @@ type Where struct {
 	Value any
 }
 
-func (w *Where) Parse() string {
-	val := w.Value
-	switch w.Value.(type) {
-	case string:
-		val = fmt.Sprintf("'%s'", w.Value)
-	}
-
-	return fmt.Sprintf("%s %s %v", w.Field, w.Op, val)
+type SelectStatement struct {
+	Table               string
+	Columns             []string
+	WhereStatements     []Where
+	WhereInStatement    WhereIn
+	WhereNotInStatement WhereNotIn
+	Joins               []Join
+	SubQueries          []SubQuery
+	Ordering            Order
+	Limit               int64
+	Offset              int64
+	setStatement        string
 }
 
 type WhereIn struct {
@@ -70,44 +74,9 @@ type WhereIn struct {
 	Values []any
 }
 
-func (w *WhereIn) Parse() string {
-	inValues := ""
-	for i, v := range w.Values {
-		switch v.(type) {
-		case string:
-			inValues += fmt.Sprintf("'%s'", v)
-		default:
-			inValues += fmt.Sprintf("%v", v)
-		}
-
-		if i < len(w.Values)-1 {
-			inValues += ","
-		}
-	}
-	return fmt.Sprintf("%s IN(%s)", w.Field, inValues)
-}
-
 type WhereNotIn struct {
 	Field  string
 	Values []any
-}
-
-func (w *WhereNotIn) Parse() string {
-	inValues := ""
-	for i, v := range w.Values {
-		switch v.(type) {
-		case string:
-			inValues += fmt.Sprintf("'%s'", v)
-		default:
-			inValues += fmt.Sprintf("%v", v)
-		}
-
-		if i < len(w.Values)-1 {
-			inValues += ","
-		}
-	}
-	return fmt.Sprintf("%s NOT IN(%s)", w.Field, inValues)
-
 }
 
 type Join struct {
@@ -128,22 +97,53 @@ type Order struct {
 	Direction OrderDirection
 }
 
-func (o *Order) Parse() string {
-	return fmt.Sprintf("ORDER BY %s %s", o.Field, o.Direction)
+func (w *Where) Parse() string {
+	val := w.Value
+	switch w.Value.(type) {
+	case string:
+		val = fmt.Sprintf("'%s'", w.Value)
+	}
+
+	return fmt.Sprintf("%s %s %v", w.Field, w.Op, val)
 }
 
-type SelectStatement struct {
-	Table               string
-	Columns             []string
-	WhereStatements     []Where
-	WhereInStatement    WhereIn
-	WhereNotInStatement WhereNotIn
-	Joins               []Join
-	SubQueries          []SubQuery
-	Ordering            Order
-	Limit               int64
-	Offset              int64
-	setStatement        string
+func (w *WhereIn) Parse() string {
+	inValues := ""
+	for i, v := range w.Values {
+		switch v.(type) {
+		case string:
+			inValues += fmt.Sprintf("'%s'", v)
+		default:
+			inValues += fmt.Sprintf("%v", v)
+		}
+
+		if i < len(w.Values)-1 {
+			inValues += ","
+		}
+	}
+	return fmt.Sprintf("%s IN(%s)", w.Field, inValues)
+}
+
+func (w *WhereNotIn) Parse() string {
+	inValues := ""
+	for i, v := range w.Values {
+		switch v.(type) {
+		case string:
+			inValues += fmt.Sprintf("'%s'", v)
+		default:
+			inValues += fmt.Sprintf("%v", v)
+		}
+
+		if i < len(w.Values)-1 {
+			inValues += ","
+		}
+	}
+	return fmt.Sprintf("%s NOT IN(%s)", w.Field, inValues)
+
+}
+
+func (o *Order) Parse() string {
+	return fmt.Sprintf("ORDER BY %s %s", o.Field, o.Direction)
 }
 
 func (s *SelectStatement) Parse() string {
