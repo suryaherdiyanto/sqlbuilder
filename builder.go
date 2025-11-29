@@ -16,11 +16,10 @@ const (
 )
 
 type SQLBuilder struct {
-	Dialect   string
-	sql       *sql.DB
-	tx        *sql.Tx
-	isTx      bool
-	statement *Statement
+	Dialect string
+	sql     *sql.DB
+	tx      *sql.Tx
+	isTx    bool
 }
 
 type Builder interface {
@@ -72,55 +71,55 @@ func (s *SQLBuilder) Begin(tx func(s *SQLBuilder) error) error {
 }
 
 func (s *SQLBuilder) NewSelect() *SQLBuilder {
-	statement := &Statement{
-		SQL:     "SELECT ",
-		Command: "SELECT",
-	}
-	s.statement = statement
+	// statement := &SelectStatement{
+	// 	SQL:     "SELECT ",
+	// 	Command: "SELECT",
+	// }
+	// s.statement = statement
 	return s
 }
 
 func (s *SQLBuilder) Insert(data interface{}) (sql.Result, error) {
 
-	stmt, err := s.buildInsert(data)
-	if err != nil {
-		return nil, err
-	}
+	// stmt, err := s.buildInsert(data)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	if err != nil {
-		return nil, err
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	s.statement.Columns = stmt["columns"]
+	// s.statement.Columns = stmt["columns"]
 	// s.statement.arguments = insertData
 	// s.statement.values = strings.Join(stmt["values"], ",")
-	s.statement.Command = "INSERT"
+	// s.statement.Command = "INSERT"
 
 	ctx := context.Background()
 	return s.Exec(ctx)
 }
 
 func (s *SQLBuilder) Update(data interface{}) (sql.Result, error) {
-	stmt, err := s.buildUpdate(data)
-	if err != nil {
-		return nil, err
-	}
+	// stmt, err := s.buildUpdate(data)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// args, err := s.extractData(data)
-	if err != nil {
-		return nil, err
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// s.statement.arguments = append(s.statement.arguments, args...)
-	s.statement.setStatement = stmt
-	s.statement.Command = "UPDATE"
+	// s.statement.setStatement = stmt
+	// s.statement.Command = "UPDATE"
 	ctx := context.Background()
 
 	return s.Exec(ctx)
 }
 
 func (s *SQLBuilder) Delete() (sql.Result, error) {
-	s.statement.Command = "DELETE"
+	// s.statement.Command = "DELETE"
 	ctx := context.Background()
 	return s.Exec(ctx)
 }
@@ -176,7 +175,7 @@ func (s *SQLBuilder) GetSql() (string, error) {
 	// 	return "", errors.New("Invalid command")
 	// }
 
-	return s.statement.SQL, nil
+	return "", nil
 }
 
 func (s *SQLBuilder) GetArguments() []interface{} {
