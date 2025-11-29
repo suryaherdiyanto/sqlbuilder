@@ -117,6 +117,8 @@ type SelectStatement struct {
 	Joins           []Join
 	SubQueries      []SubQuery
 	Ordering        Order
+	Limit           int64
+	Offset          int64
 	setStatement    string
 }
 
@@ -131,6 +133,14 @@ func (s *SelectStatement) Parse() string {
 
 	if s.Ordering != (Order{}) {
 		stmt += s.Ordering.Parse()
+	}
+
+	if s.Limit > 0 {
+		stmt += fmt.Sprintf(" LIMIT %d", s.Limit)
+	}
+
+	if s.Offset > 0 {
+		stmt += fmt.Sprintf(" OFFSET %d", s.Offset)
 	}
 
 	return fmt.Sprintf(stmt, fields, s.Table)

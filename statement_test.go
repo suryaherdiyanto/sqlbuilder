@@ -89,3 +89,19 @@ func TestSimpleSelectStatement(t *testing.T) {
 	}
 
 }
+
+func TestSimpleStatementWithLimitAndOffset(t *testing.T) {
+	statement := SelectStatement{
+		Table:   "users",
+		Columns: []string{"id", "email", "name"},
+		Limit:   10,
+		Offset:  5,
+	}
+
+	stmt := statement.Parse()
+	expected := "SELECT id,email,name FROM users WHERE  LIMIT 10 OFFSET 5"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
