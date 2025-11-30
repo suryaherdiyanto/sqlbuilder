@@ -17,6 +17,8 @@ const (
 	OperatorGreaterThan                = ">"
 	OperatorGreatherThanEqual          = ">="
 	OperatorNot                        = "!="
+	OperatorLike                       = "LIKE"
+	OperatorNotLike                    = "NOT LIKE"
 )
 
 const (
