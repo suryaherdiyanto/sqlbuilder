@@ -133,9 +133,13 @@ type JoinON struct {
 	RightTable string
 }
 
-type Order struct {
+type OrderField struct {
 	Field     string
 	Direction OrderDirection
+}
+
+type Order struct {
+	OrderingFields []OrderField
 }
 
 func (w *Where) Parse() string {
@@ -195,7 +199,15 @@ func (wnb *WhereNotBetween) Parse() string {
 }
 
 func (o *Order) Parse() string {
-	return fmt.Sprintf("ORDER BY %s %s", o.Field, o.Direction)
+	stmt := "ORDER BY "
+	for i, f := range o.OrderingFields {
+		stmt += fmt.Sprintf("%s %s", f.Field, f.Direction)
+		if i < len(o.OrderingFields)-1 {
+			stmt += ", "
+		}
+	}
+
+	return stmt
 }
 
 func (j *Join) Parse() string {
@@ -249,7 +261,7 @@ func (s *SelectStatement) Parse() string {
 		stmt += s.WhereNotInStatement.Parse()
 	}
 
-	if s.Ordering != (Order{}) {
+	if len(s.Ordering.OrderingFields) > 0 {
 		stmt += s.Ordering.Parse()
 	}
 

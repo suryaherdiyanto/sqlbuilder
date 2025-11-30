@@ -109,8 +109,12 @@ func TestStatementWhereConjuctionOr(t *testing.T) {
 
 func TestOrderClause(t *testing.T) {
 	order := Order{
-		Field:     "name",
-		Direction: OrderDirectionDESC,
+		OrderingFields: []OrderField{
+			{
+				Field:     "name",
+				Direction: OrderDirectionDESC,
+			},
+		},
 	}
 
 	stmt := order.Parse()
