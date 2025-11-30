@@ -43,6 +43,14 @@ type WhereInParser interface {
 	Parse() string
 }
 
+type WhereBetweenParser interface {
+	Parse() string
+}
+
+type WhereNotBetweenParser interface {
+	Parse() string
+}
+
 type JoinParser interface {
 	Parse() string
 }
@@ -69,17 +77,19 @@ type Where struct {
 }
 
 type SelectStatement struct {
-	Table               string
-	Columns             []string
-	WhereStatements     []Where
-	WhereInStatement    WhereIn
-	WhereNotInStatement WhereNotIn
-	Joins               []Join
-	SubQueries          []SubQuery
-	Ordering            Order
-	Limit               int64
-	Offset              int64
-	setStatement        string
+	Table                     string
+	Columns                   []string
+	WhereStatements           []Where
+	WhereBetweenStatements    []WhereBetween
+	WhereNotBetweenStatements []WhereNotBetween
+	WhereInStatement          WhereIn
+	WhereNotInStatement       WhereNotIn
+	Joins                     []Join
+	SubQueries                []SubQuery
+	Ordering                  Order
+	Limit                     int64
+	Offset                    int64
+	setStatement              string
 }
 
 type WhereIn struct {
@@ -92,6 +102,20 @@ type WhereNotIn struct {
 	Field  string
 	Values []any
 	Conj   Conjuction
+}
+
+type WhereBetween struct {
+	Field string
+	Start any
+	End   any
+	Conj  Conjuction
+}
+
+type WhereNotBetween struct {
+	Field string
+	Start any
+	End   any
+	Conj  Conjuction
 }
 
 type Join struct {
@@ -160,6 +184,14 @@ func (w *WhereNotIn) Parse() string {
 
 }
 
+func (wb *WhereBetween) Parse() string {
+	return fmt.Sprintf("%s BETWEEN %v AND %v", wb.Field, wb.Start, wb.End)
+}
+
+func (wnb *WhereNotBetween) Parse() string {
+	return fmt.Sprintf("%s NOT BETWEEN %v AND %v", wnb.Field, wnb.Start, wnb.End)
+}
+
 func (o *Order) Parse() string {
 	return fmt.Sprintf("ORDER BY %s %s", o.Field, o.Direction)
 }
@@ -178,6 +210,20 @@ func (s *SelectStatement) Parse() string {
 			stmt += fmt.Sprintf(" %s ", v.Conj)
 		}
 
+		stmt += v.Parse()
+	}
+
+	for i, v := range s.WhereBetweenStatements {
+		if i >= 1 || len(s.WhereStatements) > 0 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+		stmt += v.Parse()
+	}
+
+	for i, v := range s.WhereNotBetweenStatements {
+		if i >= 1 || len(s.WhereStatements) > 0 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
 		stmt += v.Parse()
 	}
 
