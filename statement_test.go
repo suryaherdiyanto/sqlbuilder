@@ -248,7 +248,7 @@ func TestStatementWithJoin(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"users.id", "users.email", "orders.total"},
-		Joins: []Join{
+		JoinStatements: []Join{
 			{
 				Type:       InnerJoin,
 				OtherTable: "orders",

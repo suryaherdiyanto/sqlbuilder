@@ -37,34 +37,6 @@ const (
 	ConjuctionOr             = "OR"
 )
 
-type WhereParser interface {
-	Parse() string
-}
-
-type WhereInParser interface {
-	Parse() string
-}
-
-type WhereBetweenParser interface {
-	Parse() string
-}
-
-type WhereNotBetweenParser interface {
-	Parse() string
-}
-
-type JoinParser interface {
-	Parse() string
-}
-
-type StatementParser interface {
-	Parse() string
-}
-
-type OrderParser interface {
-	Parse() string
-}
-
 type WhereGroup struct {
 	Conj   Conjuction
 	Wheres []Where
@@ -84,9 +56,9 @@ type SelectStatement struct {
 	WhereStatements           []Where
 	WhereBetweenStatements    []WhereBetween
 	WhereNotBetweenStatements []WhereNotBetween
+	JoinStatements            []Join
 	WhereInStatement          WhereIn
 	WhereNotInStatement       WhereNotIn
-	Joins                     []Join
 	SubQueries                []SubQuery
 	Ordering                  Order
 	Limit                     int64
@@ -140,6 +112,18 @@ type OrderField struct {
 
 type Order struct {
 	OrderingFields []OrderField
+}
+
+func (s *SelectStatement) ParseWheres() string {
+	stmt := ""
+	for i, v := range s.WhereStatements {
+		if i >= 1 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+
+		stmt += v.Parse()
+	}
+	return stmt
 }
 
 func (w *Where) Parse() string {
@@ -210,6 +194,72 @@ func (o *Order) Parse() string {
 	return stmt
 }
 
+func (s *SelectStatement) ParseJoins() string {
+	stmt := ""
+	for _, v := range s.JoinStatements {
+		stmt += fmt.Sprintf("%s ", v.Parse())
+	}
+
+	return stmt
+}
+
+func (s *SelectStatement) ParseWhereBetweens() string {
+	stmt := ""
+	for i, v := range s.WhereBetweenStatements {
+		if i >= 1 || len(s.WhereStatements) > 0 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+		stmt += v.Parse()
+	}
+
+	return stmt
+}
+
+func (s *SelectStatement) ParseWhereNotBetweens() string {
+	stmt := ""
+	for i, v := range s.WhereNotBetweenStatements {
+		if i >= 1 || len(s.WhereStatements) > 0 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+		stmt += v.Parse()
+	}
+
+	return stmt
+}
+
+func (s *SelectStatement) ParseWhereIn() string {
+	stmt := ""
+	if s.WhereInStatement.Field != "" || len(s.WhereInStatement.Values) > 0 {
+		if len(s.WhereStatements) > 0 {
+			stmt += fmt.Sprintf(" %s ", s.WhereInStatement.Conj)
+		}
+		stmt += s.WhereInStatement.Parse()
+	}
+
+	return stmt
+}
+
+func (s *SelectStatement) ParseWhereNotIn() string {
+	stmt := ""
+	if s.WhereNotInStatement.Field != "" || len(s.WhereNotInStatement.Values) > 0 {
+		if len(s.WhereStatements) > 0 {
+			stmt += fmt.Sprintf(" %s ", s.WhereNotInStatement.Conj)
+		}
+		stmt += s.WhereNotInStatement.Parse()
+	}
+
+	return stmt
+}
+
+func (s *SelectStatement) ParseOrdering() string {
+	stmt := ""
+	if len(s.Ordering.OrderingFields) > 0 {
+		stmt += s.Ordering.Parse()
+	}
+
+	return stmt
+}
+
 func (j *Join) Parse() string {
 	return fmt.Sprintf("%s %s ON %s.%v = %s.%v", strings.ToUpper(string(j.Type)), j.OtherTable, j.On.LeftTable, j.On.LeftValue, j.On.RightTable, j.On.RightValue)
 }
@@ -219,51 +269,21 @@ func (s *SelectStatement) Parse() string {
 
 	fields := strings.Join(s.Columns, ",")
 
-	for _, join := range s.Joins {
-		stmt += fmt.Sprintf("%s ", join.Parse())
-	}
+	stmt += s.ParseJoins()
 
 	stmt += "WHERE "
 
-	for i, v := range s.WhereStatements {
-		if i >= 1 {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
+	stmt += s.ParseWheres()
 
-		stmt += v.Parse()
-	}
+	stmt += s.ParseWhereBetweens()
 
-	for i, v := range s.WhereBetweenStatements {
-		if i >= 1 || len(s.WhereStatements) > 0 {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
-		stmt += v.Parse()
-	}
+	stmt += s.ParseWhereNotBetweens()
 
-	for i, v := range s.WhereNotBetweenStatements {
-		if i >= 1 || len(s.WhereStatements) > 0 {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
-		stmt += v.Parse()
-	}
+	stmt += s.ParseWhereIn()
 
-	if s.WhereInStatement.Field != "" || len(s.WhereInStatement.Values) > 0 {
-		if len(s.WhereStatements) > 0 {
-			stmt += fmt.Sprintf(" %s ", s.WhereInStatement.Conj)
-		}
-		stmt += s.WhereInStatement.Parse()
-	}
+	stmt += s.ParseWhereNotIn()
 
-	if s.WhereNotInStatement.Field != "" || len(s.WhereNotInStatement.Values) > 0 {
-		if len(s.WhereStatements) > 0 {
-			stmt += fmt.Sprintf(" %s ", s.WhereNotInStatement.Conj)
-		}
-		stmt += s.WhereNotInStatement.Parse()
-	}
-
-	if len(s.Ordering.OrderingFields) > 0 {
-		stmt += s.Ordering.Parse()
-	}
+	stmt += s.ParseOrdering()
 
 	if s.Limit > 0 {
 		stmt += fmt.Sprintf(" LIMIT %d", s.Limit)
