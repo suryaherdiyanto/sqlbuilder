@@ -90,6 +90,26 @@ func TestSimpleSelectStatement(t *testing.T) {
 
 }
 
+func TestJoinClauseParsing(t *testing.T) {
+	join := Join{
+		Type:       LeftJoin,
+		OtherTable: "orders",
+		On: JoinON{
+			LeftTable:  "users",
+			LeftValue:  "id",
+			RightTable: "orders",
+			RightValue: "user_id",
+		},
+	}
+
+	stmt := join.Parse()
+	expected := "LEFT JOIN orders ON users.id = orders.user_id"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
 func TestSimpleStatementWithLimitAndOffset(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",

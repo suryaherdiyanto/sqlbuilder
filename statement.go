@@ -146,6 +146,10 @@ func (o *Order) Parse() string {
 	return fmt.Sprintf("ORDER BY %s %s", o.Field, o.Direction)
 }
 
+func (j *Join) Parse() string {
+	return fmt.Sprintf("%s %s ON %s.%v = %s.%v", strings.ToUpper(string(j.Type)), j.OtherTable, j.On.LeftTable, j.On.LeftValue, j.On.RightTable, j.On.RightValue)
+}
+
 func (s *SelectStatement) Parse() string {
 	stmt := `SELECT %s FROM %s WHERE `
 
