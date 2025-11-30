@@ -196,6 +196,32 @@ func TestStatementWhereIn(t *testing.T) {
 	}
 }
 
+func TestStatementWhereInWithConjuction(t *testing.T) {
+	statement := SelectStatement{
+		Table:   "users",
+		Columns: []string{"id", "email", "name"},
+		WhereInStatement: WhereIn{
+			Field:  "email",
+			Values: []any{"johndoe@gmail.com", "test@example.com"},
+			Conj:   ConjuctionAnd,
+		},
+		WhereStatements: []Where{
+			{
+				Field: "name",
+				Op:    OperatorEqual,
+				Value: "John",
+			},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "SELECT id,email,name FROM users WHERE name = 'John' AND email IN('johndoe@gmail.com','test@example.com')"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
 func TestStatementWhereNotIn(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",

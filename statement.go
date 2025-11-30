@@ -85,11 +85,13 @@ type SelectStatement struct {
 type WhereIn struct {
 	Field  string
 	Values []any
+	Conj   Conjuction
 }
 
 type WhereNotIn struct {
 	Field  string
 	Values []any
+	Conj   Conjuction
 }
 
 type Join struct {
@@ -134,11 +136,13 @@ func (w *WhereIn) Parse() string {
 			inValues += ","
 		}
 	}
+
 	return fmt.Sprintf("%s IN(%s)", w.Field, inValues)
 }
 
 func (w *WhereNotIn) Parse() string {
 	inValues := ""
+
 	for i, v := range w.Values {
 		switch v.(type) {
 		case string:
@@ -151,6 +155,7 @@ func (w *WhereNotIn) Parse() string {
 			inValues += ","
 		}
 	}
+
 	return fmt.Sprintf("%s NOT IN(%s)", w.Field, inValues)
 
 }
@@ -178,14 +183,14 @@ func (s *SelectStatement) Parse() string {
 
 	if s.WhereInStatement.Field != "" || len(s.WhereInStatement.Values) > 0 {
 		if len(s.WhereStatements) > 0 {
-			stmt += " AND "
+			stmt += fmt.Sprintf(" %s ", s.WhereInStatement.Conj)
 		}
 		stmt += s.WhereInStatement.Parse()
 	}
 
 	if s.WhereNotInStatement.Field != "" || len(s.WhereNotInStatement.Values) > 0 {
-		if len(s.WhereStatements) > 0 || s.WhereInStatement.Field != "" {
-			stmt += " AND "
+		if len(s.WhereStatements) > 0 {
+			stmt += fmt.Sprintf(" %s ", s.WhereNotInStatement.Conj)
 		}
 		stmt += s.WhereNotInStatement.Parse()
 	}
