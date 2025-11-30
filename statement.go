@@ -8,6 +8,7 @@ import (
 type Operator string
 type JoinType string
 type OrderDirection string
+type Conjuction string
 
 const (
 	OperatorEqual             Operator = "="
@@ -27,6 +28,11 @@ const (
 const (
 	OrderDirectionASC  OrderDirection = "asc"
 	OrderDirectionDESC                = "desc"
+)
+
+const (
+	ConjuctionAnd Conjuction = "AND"
+	ConjuctionOr             = "OR"
 )
 
 type WhereParser interface {
@@ -49,10 +55,17 @@ type OrderParser interface {
 	Parse() string
 }
 
+type WhereGroup struct {
+	Conj   Conjuction
+	Wheres []Where
+}
+
 type Where struct {
-	Field string
-	Op    Operator
-	Value any
+	Field  string
+	Op     Operator
+	Value  any
+	Conj   Conjuction
+	Groups []WhereGroup
 }
 
 type SelectStatement struct {
@@ -155,7 +168,11 @@ func (s *SelectStatement) Parse() string {
 
 	fields := strings.Join(s.Columns, ",")
 
-	for _, v := range s.WhereStatements {
+	for i, v := range s.WhereStatements {
+		if i >= 1 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+
 		stmt += v.Parse()
 	}
 

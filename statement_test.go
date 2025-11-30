@@ -55,6 +55,58 @@ func TestWhereParsing(t *testing.T) {
 	}
 }
 
+func TestStatementMultipleWhere(t *testing.T) {
+	statement := SelectStatement{
+		Table:   "users",
+		Columns: []string{"id", "email", "name"},
+		WhereStatements: []Where{
+			{
+				Field: "email",
+				Value: "johndoe@gmail.com",
+				Op:    OperatorEqual,
+			},
+			{
+				Field: "access_role",
+				Value: 3,
+				Op:    OperatorLessThan,
+				Conj:  ConjuctionAnd,
+			},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "SELECT id,email,name FROM users WHERE email = 'johndoe@gmail.com' AND access_role < 3"
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
+func TestStatementWhereConjuctionOr(t *testing.T) {
+	statement := SelectStatement{
+		Table:   "users",
+		Columns: []string{"id", "email", "name"},
+		WhereStatements: []Where{
+			{
+				Field: "email",
+				Value: "johndoe@gmail.com",
+				Op:    OperatorEqual,
+			},
+			{
+				Field: "role",
+				Value: "admin",
+				Op:    OperatorLessThan,
+				Conj:  ConjuctionOr,
+			},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "SELECT id,email,name FROM users WHERE email = 'johndoe@gmail.com' OR role < 'admin'"
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
 func TestOrderClause(t *testing.T) {
 	order := Order{
 		Field:     "name",
