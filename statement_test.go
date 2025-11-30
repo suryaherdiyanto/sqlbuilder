@@ -239,3 +239,36 @@ func TestStatementWhereNotIn(t *testing.T) {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 }
+
+func TestStatementWithJoin(t *testing.T) {
+	statement := SelectStatement{
+		Table:   "users",
+		Columns: []string{"users.id", "users.email", "orders.total"},
+		Joins: []Join{
+			{
+				Type:       InnerJoin,
+				OtherTable: "orders",
+				On: JoinON{
+					LeftTable:  "users",
+					LeftValue:  "id",
+					RightTable: "orders",
+					RightValue: "user_id",
+				},
+			},
+		},
+		WhereStatements: []Where{
+			{
+				Field: "orders.total",
+				Op:    OperatorGreaterThan,
+				Value: 10000,
+			},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "SELECT users.id,users.email,orders.total FROM users INNER JOIN orders ON users.id = orders.user_id WHERE orders.total > 10000"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}

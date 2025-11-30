@@ -201,9 +201,15 @@ func (j *Join) Parse() string {
 }
 
 func (s *SelectStatement) Parse() string {
-	stmt := `SELECT %s FROM %s WHERE `
+	stmt := `SELECT %s FROM %s `
 
 	fields := strings.Join(s.Columns, ",")
+
+	for _, join := range s.Joins {
+		stmt += fmt.Sprintf("%s ", join.Parse())
+	}
+
+	stmt += "WHERE "
 
 	for i, v := range s.WhereStatements {
 		if i >= 1 {
