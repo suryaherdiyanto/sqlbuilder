@@ -61,7 +61,7 @@ func TestWithWhere(t *testing.T) {
 	builder = New("sqlite", db)
 	builder.Select("*").Table("users").Where("email", OperatorEqual, "johndoe@gmail.com")
 
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email = 'johndoe@gmail.com'" {
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email = ?" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }

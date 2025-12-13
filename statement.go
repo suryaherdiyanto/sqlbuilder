@@ -128,28 +128,19 @@ func (s *SelectStatement) ParseWheres() string {
 }
 
 func (w *Where) Parse() string {
-	val := w.Value
-	switch w.Value.(type) {
-	case string:
-		val = fmt.Sprintf("'%s'", w.Value)
-	}
 
 	if (!reflect.DeepEqual(w.SubStatement, SelectStatement{})) {
-		val = fmt.Sprintf("(%s)", w.SubStatement.Parse())
+		val := fmt.Sprintf("(%s)", w.SubStatement.Parse())
+		return fmt.Sprintf("%s %s %v", w.Field, w.Op, val)
 	}
 
-	return fmt.Sprintf("%s %s %v", w.Field, w.Op, val)
+	return fmt.Sprintf("%s %s ?", w.Field, w.Op)
 }
 
 func (w *WhereIn) Parse() string {
 	inValues := ""
-	for i, v := range w.Values {
-		switch v.(type) {
-		case string:
-			inValues += fmt.Sprintf("'%s'", v)
-		default:
-			inValues += fmt.Sprintf("%v", v)
-		}
+	for i, _ := range w.Values {
+		inValues += "?"
 
 		if i < len(w.Values)-1 {
 			inValues += ","
@@ -162,13 +153,8 @@ func (w *WhereIn) Parse() string {
 func (w *WhereNotIn) Parse() string {
 	inValues := ""
 
-	for i, v := range w.Values {
-		switch v.(type) {
-		case string:
-			inValues += fmt.Sprintf("'%s'", v)
-		default:
-			inValues += fmt.Sprintf("%v", v)
-		}
+	for i, _ := range w.Values {
+		inValues += "?"
 
 		if i < len(w.Values)-1 {
 			inValues += ","
@@ -180,11 +166,11 @@ func (w *WhereNotIn) Parse() string {
 }
 
 func (wb *WhereBetween) Parse() string {
-	return fmt.Sprintf("%s BETWEEN %v AND %v", wb.Field, wb.Start, wb.End)
+	return fmt.Sprintf("%s BETWEEN ? AND ?", wb.Field)
 }
 
 func (wnb *WhereNotBetween) Parse() string {
-	return fmt.Sprintf("%s NOT BETWEEN %v AND %v", wnb.Field, wnb.Start, wnb.End)
+	return fmt.Sprintf("%s NOT BETWEEN ? AND ?", wnb.Field)
 }
 
 func (o *Order) Parse() string {
@@ -202,7 +188,7 @@ func (o *Order) Parse() string {
 func (s *SelectStatement) ParseJoins() string {
 	stmt := ""
 	for _, v := range s.JoinStatements {
-		stmt += fmt.Sprintf("%s ", v.Parse())
+		stmt += fmt.Sprintf(" %s", v.Parse())
 	}
 
 	return stmt
