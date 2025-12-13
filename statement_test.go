@@ -11,7 +11,7 @@ func TestWhereInParsing(t *testing.T) {
 	}
 
 	stmt := whereIn.Parse()
-	expected := "name IN('john','doe')"
+	expected := "name IN(?,?)"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
@@ -21,7 +21,7 @@ func TestWhereInParsing(t *testing.T) {
 		Values: []any{19, 20, 31},
 	}
 	stmt = whereIn.Parse()
-	expected = "age IN(19,20,31)"
+	expected = "age IN(?,?,?)"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
@@ -35,7 +35,7 @@ func TestWhereParsing(t *testing.T) {
 	}
 
 	stmt := where.Parse()
-	expected := "name = 'John Doe'"
+	expected := "name = ?"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -48,7 +48,7 @@ func TestWhereParsing(t *testing.T) {
 	}
 
 	stmt = where.Parse()
-	expected = "age > 17"
+	expected = "age > ?"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -75,7 +75,7 @@ func TestStatementMultipleWhere(t *testing.T) {
 	}
 
 	stmt := statement.Parse()
-	expected := "SELECT id,email,name FROM users WHERE email = 'johndoe@gmail.com' AND access_role < 3"
+	expected := "SELECT id,email,name FROM users WHERE email = ? AND access_role < ?"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
@@ -101,7 +101,7 @@ func TestStatementWhereConjuctionOr(t *testing.T) {
 	}
 
 	stmt := statement.Parse()
-	expected := "SELECT id,email,name FROM users WHERE email = 'johndoe@gmail.com' OR role < 'admin'"
+	expected := "SELECT id,email,name FROM users WHERE email = ? OR role < ?"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
@@ -139,7 +139,7 @@ func TestSimpleSelectStatement(t *testing.T) {
 	}
 
 	stmt := statement.Parse()
-	expected := "SELECT id,email,name FROM users WHERE email = 'johndoe@gmail.com'"
+	expected := "SELECT id,email,name FROM users WHERE email = ?"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
@@ -175,7 +175,7 @@ func TestSimpleStatementWithLimitAndOffset(t *testing.T) {
 	}
 
 	stmt := statement.Parse()
-	expected := "SELECT id,email,name FROM users WHERE  LIMIT 10 OFFSET 5"
+	expected := "SELECT id,email,name FROM users LIMIT 10 OFFSET 5"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -195,7 +195,7 @@ func TestStatementWhereIn(t *testing.T) {
 	}
 
 	stmt := statement.Parse()
-	expected := "SELECT id,email,name FROM users WHERE email IN('johndoe@gmail.com','test@example.com')"
+	expected := "SELECT id,email,name FROM users WHERE email IN(?,?)"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -223,7 +223,7 @@ func TestStatementWhereInWithConjuction(t *testing.T) {
 	}
 
 	stmt := statement.Parse()
-	expected := "SELECT id,email,name FROM users WHERE name = 'John' AND email IN('johndoe@gmail.com','test@example.com')"
+	expected := "SELECT id,email,name FROM users WHERE name = ? AND email IN(?,?)"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -243,7 +243,7 @@ func TestStatementWhereNotIn(t *testing.T) {
 	}
 
 	stmt := statement.Parse()
-	expected := "SELECT id,email,name FROM users WHERE email NOT IN('johndoe@gmail.com','test@example.com')"
+	expected := "SELECT id,email,name FROM users WHERE email NOT IN(?,?)"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -276,7 +276,7 @@ func TestStatementWithJoin(t *testing.T) {
 	}
 
 	stmt := statement.Parse()
-	expected := "SELECT users.id,users.email,orders.total FROM users INNER JOIN orders ON users.id = orders.user_id WHERE orders.total > 10000"
+	expected := "SELECT users.id,users.email,orders.total FROM users INNER JOIN orders ON users.id = orders.user_id WHERE orders.total > ?"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -307,7 +307,7 @@ func TestWithSubStatementWhere(t *testing.T) {
 	}
 
 	stmt := statement.Parse()
-	expected := "SELECT * FROM users WHERE roles_id = (SELECT id FROM roles WHERE roles.id = 3)"
+	expected := "SELECT * FROM users WHERE roles_id = (SELECT id FROM roles WHERE roles.id = ?)"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
