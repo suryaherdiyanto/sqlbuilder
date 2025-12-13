@@ -186,9 +186,11 @@ func TestStatementWhereIn(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		WhereInStatement: WhereIn{
-			Field:  "email",
-			Values: []any{"johndoe@gmail.com", "test@example.com"},
+		WhereInStatements: []WhereIn{
+			{
+				Field:  "email",
+				Values: []any{"johndoe@gmail.com", "test@example.com"},
+			},
 		},
 	}
 
@@ -204,10 +206,12 @@ func TestStatementWhereInWithConjuction(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		WhereInStatement: WhereIn{
-			Field:  "email",
-			Values: []any{"johndoe@gmail.com", "test@example.com"},
-			Conj:   ConjuctionAnd,
+		WhereInStatements: []WhereIn{
+			{
+				Field:  "email",
+				Values: []any{"johndoe@gmail.com", "test@example.com"},
+				Conj:   ConjuctionAnd,
+			},
 		},
 		WhereStatements: []Where{
 			{
@@ -230,9 +234,11 @@ func TestStatementWhereNotIn(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		WhereNotInStatement: WhereNotIn{
-			Field:  "email",
-			Values: []any{"johndoe@gmail.com", "test@example.com"},
+		WhereNotInStatements: []WhereNotIn{
+			{
+				Field:  "email",
+				Values: []any{"johndoe@gmail.com", "test@example.com"},
+			},
 		},
 	}
 

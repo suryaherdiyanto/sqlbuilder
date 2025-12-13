@@ -59,8 +59,8 @@ type SelectStatement struct {
 	WhereBetweenStatements    []WhereBetween
 	WhereNotBetweenStatements []WhereNotBetween
 	JoinStatements            []Join
-	WhereInStatement          WhereIn
-	WhereNotInStatement       WhereNotIn
+	WhereInStatements         []WhereIn
+	WhereNotInStatements      []WhereNotIn
 	SubQueries                []SubQuery
 	Ordering                  Order
 	Limit                     int64
@@ -235,11 +235,16 @@ func (s *SelectStatement) ParseWhereNotBetweens() string {
 
 func (s *SelectStatement) ParseWhereIn() string {
 	stmt := ""
-	if s.WhereInStatement.Field != "" || len(s.WhereInStatement.Values) > 0 {
-		if len(s.WhereStatements) > 0 {
-			stmt += fmt.Sprintf(" %s ", s.WhereInStatement.Conj)
+	if len(s.WhereStatements) > 0 {
+		for _, v := range s.WhereInStatements {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
 		}
-		stmt += s.WhereInStatement.Parse()
+	}
+
+	if len(s.WhereInStatements) > 0 {
+		for _, v := range s.WhereInStatements {
+			stmt += v.Parse()
+		}
 	}
 
 	return stmt
@@ -247,11 +252,16 @@ func (s *SelectStatement) ParseWhereIn() string {
 
 func (s *SelectStatement) ParseWhereNotIn() string {
 	stmt := ""
-	if s.WhereNotInStatement.Field != "" || len(s.WhereNotInStatement.Values) > 0 {
-		if len(s.WhereStatements) > 0 {
-			stmt += fmt.Sprintf(" %s ", s.WhereNotInStatement.Conj)
+	if len(s.WhereStatements) > 0 {
+		for _, v := range s.WhereNotInStatements {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
 		}
-		stmt += s.WhereNotInStatement.Parse()
+	}
+
+	if len(s.WhereNotInStatements) > 0 {
+		for _, v := range s.WhereNotInStatements {
+			stmt += v.Parse()
+		}
 	}
 
 	return stmt
