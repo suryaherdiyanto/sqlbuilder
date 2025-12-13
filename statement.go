@@ -2,6 +2,7 @@ package sqlbuilder
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -132,6 +133,10 @@ func (w *Where) Parse() string {
 	switch w.Value.(type) {
 	case string:
 		val = fmt.Sprintf("'%s'", w.Value)
+	}
+
+	if (!reflect.DeepEqual(w.SubStatement, SelectStatement{})) {
+		val = fmt.Sprintf("(%s)", w.SubStatement.Parse())
 	}
 
 	return fmt.Sprintf("%s %s %v", w.Field, w.Op, val)

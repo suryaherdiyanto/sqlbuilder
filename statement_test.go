@@ -276,3 +276,34 @@ func TestStatementWithJoin(t *testing.T) {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 }
+
+func TestWithSubStatementWhere(t *testing.T) {
+	statement := SelectStatement{
+		Table:   "users",
+		Columns: []string{"*"},
+		WhereStatements: []Where{
+			{
+				Field: "roles_id",
+				Op:    OperatorEqual,
+				SubStatement: SelectStatement{
+					Table:   "roles",
+					Columns: []string{"id"},
+					WhereStatements: []Where{
+						{
+							Field: "roles.id",
+							Op:    OperatorEqual,
+							Value: 3,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "SELECT * FROM users WHERE roles_id = (SELECT id FROM roles WHERE roles.id = 3)"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
