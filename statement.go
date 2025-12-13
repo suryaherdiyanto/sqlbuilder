@@ -280,13 +280,15 @@ func (j *Join) Parse() string {
 }
 
 func (s *SelectStatement) Parse() string {
-	stmt := `SELECT %s FROM %s `
+	stmt := `SELECT %s FROM %s`
 
 	fields := strings.Join(s.Columns, ",")
 
 	stmt += s.ParseJoins()
 
-	stmt += "WHERE "
+	if len(s.WhereStatements) > 0 || len(s.WhereBetweenStatements) > 0 || len(s.WhereNotBetweenStatements) > 0 || len(s.WhereInStatements) > 0 || len(s.WhereNotInStatements) > 0 {
+		stmt += " WHERE "
+	}
 
 	stmt += s.ParseWheres()
 
