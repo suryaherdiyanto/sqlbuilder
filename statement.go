@@ -61,7 +61,6 @@ type SelectStatement struct {
 	JoinStatements            []Join
 	WhereInStatements         []WhereIn
 	WhereNotInStatements      []WhereNotIn
-	SubQueries                []SubQuery
 	Ordering                  Order
 	Limit                     int64
 	Offset                    int64
@@ -310,8 +309,4 @@ func (s *SelectStatement) Parse() string {
 	}
 
 	return fmt.Sprintf(stmt, fields, s.Table)
-}
-
-type SubQuery struct {
-	SubStatement SelectStatement
 }
