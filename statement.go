@@ -43,11 +43,12 @@ type WhereGroup struct {
 }
 
 type Where struct {
-	Field  string
-	Op     Operator
-	Value  any
-	Conj   Conjuction
-	Groups []WhereGroup
+	Field        string
+	Op           Operator
+	Value        any
+	Conj         Conjuction
+	Groups       []WhereGroup
+	SubStatement SelectStatement
 }
 
 type SelectStatement struct {
