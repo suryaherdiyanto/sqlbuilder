@@ -16,15 +16,17 @@ const (
 )
 
 type SQLBuilder struct {
-	Dialect string
-	sql     *sql.DB
-	tx      *sql.Tx
-	isTx    bool
+	Dialect   string
+	sql       *sql.DB
+	tx        *sql.Tx
+	isTx      bool
+	statement SelectStatement
 }
 
 type Builder interface {
-	Table(table string, columns ...string) *SQLBuilder
-	Where(statement string, vars ...interface{}) *SQLBuilder
+	Select(columns ...string) *SQLBuilder
+	Table(table string) *SQLBuilder
+	Where(field string, Op Operator, val any) *SQLBuilder
 	WhereFunc(statement string, b func(b Builder) *SQLBuilder) *SQLBuilder
 	Join(table string, first string, operator string, second string) *SQLBuilder
 	LeftJoin(table string, first string, operator string, second string) *SQLBuilder
@@ -70,13 +72,11 @@ func (s *SQLBuilder) Begin(tx func(s *SQLBuilder) error) error {
 	return nil
 }
 
-func (s *SQLBuilder) NewSelect() *SQLBuilder {
-	// statement := &SelectStatement{
-	// 	SQL:     "SELECT ",
-	// 	Command: "SELECT",
-	// }
-	// s.statement = statement
-	return s
+func (b *SQLBuilder) Select(columns ...string) *SQLBuilder {
+	b.statement = SelectStatement{
+		Columns: columns,
+	}
+	return b
 }
 
 func (s *SQLBuilder) Insert(data interface{}) (sql.Result, error) {
@@ -124,15 +124,8 @@ func (s *SQLBuilder) Delete() (sql.Result, error) {
 	return s.Exec(ctx)
 }
 
-func (s *SQLBuilder) Table(table string, columns ...string) *SQLBuilder {
-	// vRef := reflect.ValueOf(s.statement)
-	// if vRef.IsZero() {
-	// 	s.statement = &Statement{}
-	// }
-
-	// s.statement.Table = table
-	// s.statement.Columns = columns
-
+func (s *SQLBuilder) Table(table string) *SQLBuilder {
+	s.statement.Table = table
 	return s
 }
 
@@ -174,18 +167,22 @@ func (s *SQLBuilder) GetSql() (string, error) {
 	// default:
 	// 	return "", errors.New("Invalid command")
 	// }
+	stmt := s.statement.Parse()
 
-	return "", nil
+	return stmt, nil
 }
 
 func (s *SQLBuilder) GetArguments() []interface{} {
 	return make([]interface{}, 0)
 }
 
-func (s *SQLBuilder) Where(statement string, vars ...interface{}) *SQLBuilder {
-	// s.statement.SQL += fmt.Sprintf(" WHERE %s", statement)
-	// s.statement.arguments = append(s.statement.arguments, vars...)
-	// s.statement.Where = statement
+func (s *SQLBuilder) Where(field string, Op Operator, val any) *SQLBuilder {
+	s.statement.WhereStatements = append(s.statement.WhereStatements, Where{
+		Field: field,
+		Value: val,
+		Op:    Op,
+		Conj:  ConjuctionAnd,
+	})
 	return s
 }
 
