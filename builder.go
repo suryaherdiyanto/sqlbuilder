@@ -35,10 +35,10 @@ type Builder interface {
 	Join(table string, first string, operator Operator, second string) *SQLBuilder
 	LeftJoin(table string, first string, operator Operator, second string) *SQLBuilder
 	RightJoin(table string, first string, operator Operator, second string) *SQLBuilder
-	OrderBy(column string, dir string) *SQLBuilder
+	OrderBy(column string, dir OrderDirection) *SQLBuilder
 	GroupBy(columns ...string) *SQLBuilder
-	Limit(n int) *SQLBuilder
-	Offset(n int) *SQLBuilder
+	Limit(n int64) *SQLBuilder
+	Offset(n int64) *SQLBuilder
 }
 
 func New(dialect string, db *sql.DB) *SQLBuilder {
@@ -291,20 +291,35 @@ func (s *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilde
 	return s
 }
 
-func (s *SQLBuilder) OrderBy(column string, dir string) *SQLBuilder {
-	// s.statement.SQL += fmt.Sprintf(" ORDER BY %s %s", column, dir)
+func (s *SQLBuilder) OrderBy(column string, dir OrderDirection) *SQLBuilder {
+	if len(s.statement.Ordering.OrderingFields) > 0 {
+		s.statement.Ordering.OrderingFields = append(s.statement.Ordering.OrderingFields, OrderField{
+			Field:     column,
+			Direction: OrderDirection(dir),
+		})
+		return s
+	}
+
+	s.statement.Ordering = Order{
+		OrderingFields: []OrderField{
+			{
+				Field:     column,
+				Direction: OrderDirection(dir),
+			},
+		},
+	}
 	return s
 }
 func (s *SQLBuilder) GroupBy(columns ...string) *SQLBuilder {
 	// s.statement.SQL += fmt.Sprintf(" GROUP BY %s", strings.Join(columns, ", "))
 	return s
 }
-func (s *SQLBuilder) Limit(n int) *SQLBuilder {
-	// s.statement.SQL += fmt.Sprintf(" LIMIT %d", n)
+func (s *SQLBuilder) Limit(n int64) *SQLBuilder {
+	s.statement.Limit = n
 	return s
 }
-func (s *SQLBuilder) Offset(n int) *SQLBuilder {
-	// s.statement.SQL += fmt.Sprintf(" OFFSET %d", n)
+func (s *SQLBuilder) Offset(n int64) *SQLBuilder {
+	s.statement.Offset = n
 	return s
 }
 
