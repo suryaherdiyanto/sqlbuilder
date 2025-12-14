@@ -73,15 +73,17 @@ type SelectStatement struct {
 }
 
 type WhereIn struct {
-	Field  string
-	Values []any
-	Conj   Conjuction
+	Field        string
+	Values       []any
+	Conj         Conjuction
+	SubStatement SelectStatement
 }
 
 type WhereNotIn struct {
-	Field  string
-	Values []any
-	Conj   Conjuction
+	Field        string
+	Values       []any
+	Conj         Conjuction
+	SubStatement SelectStatement
 }
 
 type WhereBetween struct {
@@ -153,6 +155,10 @@ func (w *Where) Parse() string {
 
 func (w *WhereIn) Parse() string {
 	inValues := ""
+	if !reflect.DeepEqual(w.SubStatement, SelectStatement{}) {
+		return fmt.Sprintf("%s IN (%s)", w.Field, w.SubStatement.Parse())
+	}
+
 	for i, _ := range w.Values {
 		inValues += "?"
 
@@ -166,6 +172,9 @@ func (w *WhereIn) Parse() string {
 
 func (w *WhereNotIn) Parse() string {
 	inValues := ""
+	if !reflect.DeepEqual(w.SubStatement, SelectStatement{}) {
+		return fmt.Sprintf("%s NOT IN (%s)", w.Field, w.SubStatement.Parse())
+	}
 
 	for i, _ := range w.Values {
 		inValues += "?"
@@ -292,7 +301,10 @@ func (s *SelectStatement) ParseOrdering() string {
 }
 
 func (s *SelectStatement) ParseGroupings() string {
-	stmt := fmt.Sprintf(" GROUP BY %s", s.GroupByStatement.Parse())
+	stmt := ""
+	if len(s.GroupByStatement.Fields) > 0 {
+		stmt = fmt.Sprintf(" GROUP BY %s", s.GroupByStatement.Parse())
+	}
 
 	return stmt
 }
