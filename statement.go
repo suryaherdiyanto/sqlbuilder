@@ -64,6 +64,7 @@ type SelectStatement struct {
 	Ordering                  Order
 	Limit                     int64
 	Offset                    int64
+	Values                    []any
 }
 
 type WhereIn struct {
@@ -122,6 +123,7 @@ func (s *SelectStatement) ParseWheres() string {
 		}
 
 		stmt += v.Parse()
+		s.Values = append(s.Values, v.Value)
 	}
 	return stmt
 }
@@ -200,6 +202,7 @@ func (s *SelectStatement) ParseWhereBetweens() string {
 			stmt += fmt.Sprintf(" %s ", v.Conj)
 		}
 		stmt += v.Parse()
+		s.Values = append(s.Values, v.Start, v.End)
 	}
 
 	return stmt
@@ -212,6 +215,7 @@ func (s *SelectStatement) ParseWhereNotBetweens() string {
 			stmt += fmt.Sprintf(" %s ", v.Conj)
 		}
 		stmt += v.Parse()
+		s.Values = append(s.Values, v.Start, v.End)
 	}
 
 	return stmt
@@ -228,6 +232,7 @@ func (s *SelectStatement) ParseWhereIn() string {
 	if len(s.WhereInStatements) > 0 {
 		for _, v := range s.WhereInStatements {
 			stmt += v.Parse()
+			s.Values = append(s.Values, v.Values...)
 		}
 	}
 
@@ -245,6 +250,7 @@ func (s *SelectStatement) ParseWhereNotIn() string {
 	if len(s.WhereNotInStatements) > 0 {
 		for _, v := range s.WhereNotInStatements {
 			stmt += v.Parse()
+			s.Values = append(s.Values, v.Values...)
 		}
 	}
 
