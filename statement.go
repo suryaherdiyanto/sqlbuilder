@@ -63,6 +63,7 @@ type SelectStatement struct {
 	JoinStatements            []Join
 	WhereInStatements         []WhereIn
 	WhereNotInStatements      []WhereNotIn
+	GroupByStatement          GroupBy
 	Ordering                  Order
 	Limit                     int64
 	Offset                    int64
@@ -117,6 +118,10 @@ type OrderField struct {
 
 type Order struct {
 	OrderingFields []OrderField
+}
+
+type GroupBy struct {
+	Fields []string
 }
 
 func (s *SelectStatement) ParseWheres() string {
@@ -188,6 +193,18 @@ func (o *Order) Parse() string {
 		stmt += fmt.Sprintf("%s %s", f.Field, f.Direction)
 		if i < len(o.OrderingFields)-1 {
 			stmt += ", "
+		}
+	}
+
+	return stmt
+}
+
+func (g *GroupBy) Parse() string {
+	stmt := ""
+	for i, field := range g.Fields {
+		stmt += field
+		if i < len(g.Fields)-1 {
+			stmt += ","
 		}
 	}
 
@@ -274,6 +291,12 @@ func (s *SelectStatement) ParseOrdering() string {
 	return stmt
 }
 
+func (s *SelectStatement) ParseGroupings() string {
+	stmt := fmt.Sprintf(" GROUP BY %s", s.GroupByStatement.Parse())
+
+	return stmt
+}
+
 func (j *Join) Parse() string {
 	return fmt.Sprintf("%s %s ON %s.%v %s %s.%v", strings.ToUpper(string(j.Type)), j.SecondTable, j.FirstTable, j.On.LeftValue, j.On.Operator, j.SecondTable, j.On.RightValue)
 }
@@ -300,6 +323,8 @@ func (s *SelectStatement) Parse() string {
 	stmt += s.ParseWhereNotIn()
 
 	stmt += s.ParseOrdering()
+
+	stmt += s.ParseGroupings()
 
 	if s.Limit > 0 {
 		stmt += " LIMIT ?"

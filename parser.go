@@ -36,4 +36,5 @@ type ClauseParser interface {
 	ParseWhereIn() string
 	ParseWhereNotIn() string
 	ParseOrdering() string
+	ParseGroupings() string
 }
