@@ -64,7 +64,6 @@ type SelectStatement struct {
 	Ordering                  Order
 	Limit                     int64
 	Offset                    int64
-	setStatement              string
 }
 
 type WhereIn struct {
