@@ -32,9 +32,9 @@ type Builder interface {
 	WhereNotIn(field string, values []any) *SQLBuilder
 	WhereBetween(field string, start any, end any) *SQLBuilder
 	WhereFunc(statement string, b func(b Builder) *SQLBuilder) *SQLBuilder
-	Join(table string, first string, operator string, second string) *SQLBuilder
-	LeftJoin(table string, first string, operator string, second string) *SQLBuilder
-	RightJoin(table string, first string, operator string, second string) *SQLBuilder
+	Join(table string, first string, operator Operator, second string) *SQLBuilder
+	LeftJoin(table string, first string, operator Operator, second string) *SQLBuilder
+	RightJoin(table string, first string, operator Operator, second string) *SQLBuilder
 	OrderBy(column string, dir string) *SQLBuilder
 	GroupBy(columns ...string) *SQLBuilder
 	Limit(n int) *SQLBuilder
@@ -242,8 +242,17 @@ func (s *SQLBuilder) Join(table string, first string, operator Operator, second 
 	return s
 }
 
-func (s *SQLBuilder) LeftJoin(table string, first string, operator string, second string) *SQLBuilder {
-	// s.statement.Joins = append(s.statement.Joins, fmt.Sprintf(" LEFT JOIN %s ON %s %s %s", table, first, operator, second))
+func (s *SQLBuilder) LeftJoin(table string, first string, operator Operator, second string) *SQLBuilder {
+	s.statement.JoinStatements = append(s.statement.JoinStatements, Join{
+		Type:        LeftJoin,
+		SecondTable: table,
+		FirstTable:  s.statement.Table,
+		On: JoinON{
+			LeftValue:  first,
+			Operator:   operator,
+			RightValue: second,
+		},
+	})
 	return s
 }
 
