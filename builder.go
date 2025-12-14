@@ -31,7 +31,7 @@ type Builder interface {
 	WhereIn(field string, values []any) *SQLBuilder
 	WhereNotIn(field string, values []any) *SQLBuilder
 	WhereBetween(field string, start any, end any) *SQLBuilder
-	WhereFunc(statement string, b func(b Builder) *SQLBuilder) *SQLBuilder
+	WhereFunc(field string, operator Operator, b func(b Builder) *SQLBuilder) *SQLBuilder
 	Join(table string, first string, operator Operator, second string) *SQLBuilder
 	LeftJoin(table string, first string, operator Operator, second string) *SQLBuilder
 	RightJoin(table string, first string, operator Operator, second string) *SQLBuilder
@@ -270,12 +270,12 @@ func (s *SQLBuilder) RightJoin(table string, first string, operator Operator, se
 	return s
 }
 
-func (s *SQLBuilder) WhereFunc(statement string, builder func(b Builder) *SQLBuilder) *SQLBuilder {
-	// newBuilder := builder(New(s.Dialect, s.sql).NewSelect())
-
-	// sql, _ := newBuilder.GetSql()
-	// s.statement.Where = fmt.Sprintf("%s (%s)", statement, sql)
-	// s.statement.arguments = append(s.statement.arguments, newBuilder.GetArguments()...)
+func (s *SQLBuilder) WhereFunc(field string, operator Operator, builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	s.statement.WhereStatements = append(s.statement.WhereStatements, Where{
+		Field:        field,
+		Op:           operator,
+		SubStatement: builder(New(s.Dialect, s.sql)).statement,
+	})
 	return s
 }
 
