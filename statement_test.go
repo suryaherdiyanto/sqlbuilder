@@ -313,3 +313,20 @@ func TestWithSubStatementWhere(t *testing.T) {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 }
+
+func TestWithGroupByStatement(t *testing.T) {
+	statement := SelectStatement{
+		Table:   "users",
+		Columns: []string{"role", "COUNT(*) as total"},
+		GroupByStatement: GroupBy{
+			Fields: []string{"role"},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "SELECT role,COUNT(*) as total FROM users GROUP BY role"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
