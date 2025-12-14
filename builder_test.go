@@ -167,20 +167,20 @@ func TestRightJoin(t *testing.T) {
 	}
 }
 
-// func TestWhereExists(t *testing.T) {
-// 	builder = New("sqlite", db)
-// 	builder.Select("*")
+func TestWhereExists(t *testing.T) {
+	builder = New("sqlite", db)
+	builder.Select("*")
 
-// 	builder.
-// 		Table("users").
-// 		WhereExists(func(b Builder) *SQLBuilder {
-// 			return b.Select("*").Table("roles").Where("users.id = roles.user_id")
-// 		})
+	builder.
+		Table("users").
+		WhereExists(func(b Builder) *SQLBuilder {
+			return b.Select("*").Table("roles").Where("users.id", "=", "roles.user_id")
+		})
 
-// 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE EXISTS (SELECT * FROM roles WHERE users.id = roles.user_id)" {
-// 		t.Errorf("Unexpected SQL result, got: %s", sql)
-// 	}
-// }
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE EXISTS (SELECT * FROM roles WHERE users.id = ?)" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
 
 // func TestWhereFuncSubquery(t *testing.T) {
 // 	builder = New("sqlite", db)
