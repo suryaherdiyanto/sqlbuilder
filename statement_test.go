@@ -330,3 +330,54 @@ func TestWithGroupByStatement(t *testing.T) {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 }
+
+func TestWhereInParsingWithSubquery(t *testing.T) {
+	statement := SelectStatement{
+		Table:   "users",
+		Columns: []string{"*"},
+		WhereInStatements: []WhereIn{
+			{
+				Field: "id",
+				SubStatement: SelectStatement{
+					Table:   "orders",
+					Columns: []string{"user_id"},
+					WhereStatements: []Where{
+						{
+							Field: "total",
+							Op:    OperatorGreaterThan,
+							Value: 100,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "SELECT * FROM users WHERE id IN (SELECT user_id FROM orders WHERE total > ?)"
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
+func TestWhereNotInParsingWithSubquery(t *testing.T) {
+	statement := SelectStatement{
+		Table:   "users",
+		Columns: []string{"*"},
+		WhereNotInStatements: []WhereNotIn{
+			{
+				Field: "id",
+				SubStatement: SelectStatement{
+					Table:   "banned_users",
+					Columns: []string{"user_id"},
+				},
+			},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "SELECT * FROM users WHERE id NOT IN (SELECT user_id FROM banned_users)"
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
