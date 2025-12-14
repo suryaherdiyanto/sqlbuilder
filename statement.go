@@ -20,6 +20,8 @@ const (
 	OperatorNot                        = "!="
 	OperatorLike                       = "LIKE"
 	OperatorNotLike                    = "NOT LIKE"
+	OperatorExists                     = "EXISTS"
+	OperatorNotExists                  = "NOT EXISTS"
 )
 
 const (
@@ -65,6 +67,8 @@ type SelectStatement struct {
 	Limit                     int64
 	Offset                    int64
 	Values                    []any
+	HasExistsClause           bool
+	HasNotExistsClause        bool
 }
 
 type WhereIn struct {
@@ -132,7 +136,11 @@ func (w *Where) Parse() string {
 
 	if (!reflect.DeepEqual(w.SubStatement, SelectStatement{})) {
 		val := fmt.Sprintf("(%s)", w.SubStatement.Parse())
-		return fmt.Sprintf("%s %s %v", w.Field, w.Op, val)
+		if w.Op == OperatorExists || w.Op == OperatorNotExists {
+			return fmt.Sprintf("%s %v", w.Op, val)
+		}
+
+		return fmt.Sprintf("%s %s %s", w.Field, w.Op, val)
 	}
 
 	return fmt.Sprintf("%s %s ?", w.Field, w.Op)
