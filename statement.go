@@ -94,16 +94,16 @@ type WhereNotBetween struct {
 }
 
 type Join struct {
-	Type       JoinType
-	OtherTable string
-	On         JoinON
+	Type        JoinType
+	FirstTable  string
+	SecondTable string
+	On          JoinON
 }
 
 type JoinON struct {
-	LeftTable  string
+	Operator   Operator
 	LeftValue  any
 	RightValue any
-	RightTable string
 }
 
 type OrderField struct {
@@ -267,7 +267,7 @@ func (s *SelectStatement) ParseOrdering() string {
 }
 
 func (j *Join) Parse() string {
-	return fmt.Sprintf("%s %s ON %s.%v = %s.%v", strings.ToUpper(string(j.Type)), j.OtherTable, j.On.LeftTable, j.On.LeftValue, j.On.RightTable, j.On.RightValue)
+	return fmt.Sprintf("%s %s ON %s.%v %s %s.%v", strings.ToUpper(string(j.Type)), j.SecondTable, j.FirstTable, j.On.LeftValue, j.On.Operator, j.SecondTable, j.On.RightValue)
 }
 
 func (s *SelectStatement) Parse() string {
