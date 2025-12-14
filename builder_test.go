@@ -114,31 +114,32 @@ func TestWhereBetween(t *testing.T) {
 	}
 }
 
-// func TestWhereOr(t *testing.T) {
-// 	builder = New("sqlite", db)
-// 	builder.Select("*")
+func TestWhereOr(t *testing.T) {
+	builder = New("sqlite", db)
+	builder.Select("*")
 
-// 	builder.
-// 		Table("users").
-// 		Where("age >= ? OR email = ?", 18, "johndoe@example.com")
+	builder.
+		Table("users").
+		Where("age", OperatorGreatherThanEqual, 18).
+		WhereOr("email", OperatorEqual, "johndoe@example.com")
 
-// 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE age >= ? OR email = ?" {
-// 		t.Errorf("Unexpected SQL result, got: %s", sql)
-// 	}
-// }
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE age >= ? OR email = ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
 
-// func TestJoin(t *testing.T) {
-// 	builder = New("sqlite", db)
-// 	builder.Select("*")
+func TestJoin(t *testing.T) {
+	builder = New("sqlite", db)
+	builder.Select("*")
 
-// 	builder.
-// 		Table("users").
-// 		Join("roles", "users.id", "=", "roles.user_id")
+	builder.
+		Table("users").
+		Join("roles", "id", "=", "user_id")
 
-// 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users INNER JOIN roles ON users.id = roles.user_id" {
-// 		t.Errorf("Unexpected SQL result, got: %s", sql)
-// 	}
-// }
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users INNER JOIN roles ON users.id = roles.user_id" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
 
 // func TestLeftJoin(t *testing.T) {
 // 	builder = New("sqlite", db)
