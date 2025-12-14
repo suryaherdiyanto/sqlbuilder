@@ -302,11 +302,13 @@ func (s *SelectStatement) Parse() string {
 	stmt += s.ParseOrdering()
 
 	if s.Limit > 0 {
-		stmt += fmt.Sprintf(" LIMIT %d", s.Limit)
+		stmt += " LIMIT ?"
+		s.Values = append(s.Values, s.Limit)
 	}
 
 	if s.Offset > 0 {
-		stmt += fmt.Sprintf(" OFFSET %d", s.Offset)
+		stmt += " OFFSET ?"
+		s.Values = append(s.Values, s.Offset)
 	}
 
 	return fmt.Sprintf(stmt, fields, s.Table)
