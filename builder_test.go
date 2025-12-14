@@ -92,27 +92,27 @@ func TestWhereIn(t *testing.T) {
 	}
 }
 
-// func TestWhereBetween(t *testing.T) {
-// 	builder = New("sqlite", db)
-// 	builder.Select("*")
+func TestWhereBetween(t *testing.T) {
+	builder = New("sqlite", db)
+	builder.Select("*")
 
-// 	builder.
-// 		Table("users").
-// 		Where("age BETWEEN ? AND ?", 5, 10)
+	builder.
+		Table("users").
+		WhereBetween("age", 5, 10)
 
-// 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE age BETWEEN ? AND ?" {
-// 		t.Errorf("Unexpected SQL result, got: %s", sql)
-// 	}
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE age BETWEEN ? AND ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
 
-// 	builder = builder.Select("*")
-// 	builder.
-// 		Table("users").
-// 		Where("dob BETWEEN ? AND ?", "1995-02-01", "2000-01-01")
+	builder = builder.Select("*")
+	builder.
+		Table("users").
+		WhereBetween("dob", "1995-02-01", "2000-01-01")
 
-// 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE dob BETWEEN ? AND ?" {
-// 		t.Errorf("Unexpected SQL result, got: %s", sql)
-// 	}
-// }
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE dob BETWEEN ? AND ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
 
 // func TestWhereOr(t *testing.T) {
 // 	builder = New("sqlite", db)
