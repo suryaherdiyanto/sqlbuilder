@@ -29,7 +29,9 @@ type OrderParser interface {
 }
 
 type ClauseParser interface {
+	ParseWheres() string
 	ParseJoins() string
+	ParseWhereBetweens() string
 	ParseWhereNotBetweens() string
 	ParseWhereIn() string
 	ParseWhereNotIn() string
