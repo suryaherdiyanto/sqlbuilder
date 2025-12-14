@@ -148,12 +148,11 @@ func TestSimpleSelectStatement(t *testing.T) {
 
 func TestJoinClauseParsing(t *testing.T) {
 	join := Join{
-		Type:       LeftJoin,
-		OtherTable: "orders",
+		Type:        LeftJoin,
+		FirstTable:  "users",
+		SecondTable: "orders",
 		On: JoinON{
-			LeftTable:  "users",
 			LeftValue:  "id",
-			RightTable: "orders",
 			RightValue: "user_id",
 		},
 	}
@@ -256,12 +255,12 @@ func TestStatementWithJoin(t *testing.T) {
 		Columns: []string{"users.id", "users.email", "orders.total"},
 		JoinStatements: []Join{
 			{
-				Type:       InnerJoin,
-				OtherTable: "orders",
+				Type:        InnerJoin,
+				FirstTable:  "users",
+				SecondTable: "orders",
 				On: JoinON{
-					LeftTable:  "users",
 					LeftValue:  "id",
-					RightTable: "orders",
+					Operator:   OperatorEqual,
 					RightValue: "user_id",
 				},
 			},
