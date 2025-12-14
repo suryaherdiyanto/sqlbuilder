@@ -280,11 +280,13 @@ func (s *SQLBuilder) WhereFunc(statement string, builder func(b Builder) *SQLBui
 }
 
 func (s *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder {
-	// newBuilder := builder(New(s.Dialect, s.sql).NewSelect())
+	newBuilder := builder(New(s.Dialect, s.sql))
 
-	// sql, _ := newBuilder.GetSql()
-	// s.statement.Where = fmt.Sprintf("EXISTS (%s)", sql)
-	// s.statement.arguments = append(s.statement.arguments, newBuilder.GetArguments()...)
+	s.statement.HasExistsClause = true
+	s.statement.WhereStatements = append(s.statement.WhereStatements, Where{
+		Op:           OperatorExists,
+		SubStatement: newBuilder.statement,
+	})
 
 	return s
 }
