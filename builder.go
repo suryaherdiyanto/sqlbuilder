@@ -27,6 +27,8 @@ type Builder interface {
 	Select(columns ...string) *SQLBuilder
 	Table(table string) *SQLBuilder
 	Where(field string, Op Operator, val any) *SQLBuilder
+	WhereIn(field string, values []any) *SQLBuilder
+	WhereNotIn(field string, values []any) *SQLBuilder
 	WhereFunc(statement string, b func(b Builder) *SQLBuilder) *SQLBuilder
 	Join(table string, first string, operator string, second string) *SQLBuilder
 	LeftJoin(table string, first string, operator string, second string) *SQLBuilder
@@ -183,6 +185,24 @@ func (s *SQLBuilder) Where(field string, Op Operator, val any) *SQLBuilder {
 		Op:    Op,
 		Conj:  ConjuctionAnd,
 	})
+	return s
+}
+
+func (s *SQLBuilder) WhereIn(field string, values []any) *SQLBuilder {
+	s.statement.WhereInStatements = append(s.statement.WhereInStatements, WhereIn{
+		Field:  field,
+		Values: values,
+	})
+
+	return s
+}
+
+func (s *SQLBuilder) WhereNotIn(field string, values []any) *SQLBuilder {
+	s.statement.WhereNotInStatements = append(s.statement.WhereNotInStatements, WhereNotIn{
+		Field:  field,
+		Values: values,
+	})
+
 	return s
 }
 
