@@ -153,6 +153,7 @@ func TestJoinClauseParsing(t *testing.T) {
 		SecondTable: "orders",
 		On: JoinON{
 			LeftValue:  "id",
+			Operator:   OperatorEqual,
 			RightValue: "user_id",
 		},
 	}
@@ -174,7 +175,7 @@ func TestSimpleStatementWithLimitAndOffset(t *testing.T) {
 	}
 
 	stmt := statement.Parse()
-	expected := "SELECT id,email,name FROM users LIMIT 10 OFFSET 5"
+	expected := "SELECT id,email,name FROM users LIMIT ? OFFSET ?"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
