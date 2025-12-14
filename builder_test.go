@@ -154,18 +154,18 @@ func TestLeftJoin(t *testing.T) {
 	}
 }
 
-// func TestRightJoin(t *testing.T) {
-// 	builder = New("sqlite", db)
-// 	builder.Select("*")
+func TestRightJoin(t *testing.T) {
+	builder = New("sqlite", db)
+	builder.Select("*")
 
-// 	builder.
-// 		Table("users").
-// 		RightJoin("roles", "users.id", "=", "roles.user_id")
+	builder.
+		Table("users").
+		RightJoin("roles", "id", "=", "user_id")
 
-// 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users RIGHT JOIN roles ON users.id = roles.user_id" {
-// 		t.Errorf("Unexpected SQL result, got: %s", sql)
-// 	}
-// }
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users RIGHT JOIN roles ON users.id = roles.user_id" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
 
 // func TestWhereExists(t *testing.T) {
 // 	builder = New("sqlite", db)

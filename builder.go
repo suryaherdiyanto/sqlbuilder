@@ -256,8 +256,17 @@ func (s *SQLBuilder) LeftJoin(table string, first string, operator Operator, sec
 	return s
 }
 
-func (s *SQLBuilder) RightJoin(table string, first string, operator string, second string) *SQLBuilder {
-	// s.statement.Joins = append(s.statement.Joins, fmt.Sprintf(" RIGHT JOIN %s ON %s %s %s", table, first, operator, second))
+func (s *SQLBuilder) RightJoin(table string, first string, operator Operator, second string) *SQLBuilder {
+	s.statement.JoinStatements = append(s.statement.JoinStatements, Join{
+		Type:        RightJoin,
+		SecondTable: table,
+		FirstTable:  s.statement.Table,
+		On: JoinON{
+			LeftValue:  first,
+			Operator:   operator,
+			RightValue: second,
+		},
+	})
 	return s
 }
 
