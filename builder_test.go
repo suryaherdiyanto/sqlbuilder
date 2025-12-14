@@ -66,18 +66,19 @@ func TestWithWhere(t *testing.T) {
 	}
 }
 
-// func TestWithMultipleWhere(t *testing.T) {
-// 	builder = New("sqlite", db)
-// 	builder.Select("")
+func TestWithMultipleWhere(t *testing.T) {
+	builder = New("sqlite", db)
+	builder.Select("*")
 
-// 	builder.
-// 		Table("users").
-// 		Where("email = ? AND access_role < ?", "johndoe@gmail.com", 3)
+	builder.
+		Table("users").
+		Where("email", "=", "johndoe@gmail.com").
+		Where("access_role", "<", 3)
 
-// 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email = ? AND access_role < ?" {
-// 		t.Errorf("Unexpected SQL result, got: %s", sql)
-// 	}
-// }
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email = ? AND access_role < ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
 
 // func TestWhereIn(t *testing.T) {
 // 	builder = New("sqlite", db)
