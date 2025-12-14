@@ -27,6 +27,7 @@ type Builder interface {
 	Select(columns ...string) *SQLBuilder
 	Table(table string) *SQLBuilder
 	Where(field string, Op Operator, val any) *SQLBuilder
+	WhereOr(field string, Op Operator, val any) *SQLBuilder
 	WhereIn(field string, values []any) *SQLBuilder
 	WhereNotIn(field string, values []any) *SQLBuilder
 	WhereBetween(field string, start any, end any) *SQLBuilder
@@ -189,6 +190,16 @@ func (s *SQLBuilder) Where(field string, Op Operator, val any) *SQLBuilder {
 	return s
 }
 
+func (s *SQLBuilder) WhereOr(field string, Op Operator, val any) *SQLBuilder {
+	s.statement.WhereStatements = append(s.statement.WhereStatements, Where{
+		Field: field,
+		Value: val,
+		Op:    Op,
+		Conj:  ConjuctionOr,
+	})
+	return s
+}
+
 func (s *SQLBuilder) WhereIn(field string, values []any) *SQLBuilder {
 	s.statement.WhereInStatements = append(s.statement.WhereInStatements, WhereIn{
 		Field:  field,
@@ -217,8 +228,17 @@ func (s *SQLBuilder) WhereBetween(field string, start any, end any) *SQLBuilder 
 	return s
 }
 
-func (s *SQLBuilder) Join(table string, first string, operator string, second string) *SQLBuilder {
-	// s.statement.Joins = append(s.statement.Joins, fmt.Sprintf(" INNER JOIN %s ON %s %s %s", table, first, operator, second))
+func (s *SQLBuilder) Join(table string, first string, operator Operator, second string) *SQLBuilder {
+	s.statement.JoinStatements = append(s.statement.JoinStatements, Join{
+		Type:        InnerJoin,
+		SecondTable: table,
+		FirstTable:  s.statement.Table,
+		On: JoinON{
+			LeftValue:  first,
+			Operator:   operator,
+			RightValue: second,
+		},
+	})
 	return s
 }
 
