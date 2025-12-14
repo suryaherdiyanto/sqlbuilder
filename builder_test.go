@@ -80,16 +80,17 @@ func TestWithMultipleWhere(t *testing.T) {
 	}
 }
 
-// func TestWhereIn(t *testing.T) {
-// 	builder = New("sqlite", db)
-// 	builder.Select("*")
+func TestWhereIn(t *testing.T) {
+	builder = New("sqlite", db)
+	builder.Select("*")
 
-// 	builder.Table("users").Where("email IN(?, ?)", "johndoe@example.com", "amal@example.com")
+	builder.Table("users").
+		WhereIn("email", []any{"johndoe@example.com", "amal@example.com"})
 
-// 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email IN(?, ?)" {
-// 		t.Errorf("Unexpected SQL result, got: %s", sql)
-// 	}
-// }
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email IN(?,?)" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
 
 // func TestWhereBetween(t *testing.T) {
 // 	builder = New("sqlite", db)
