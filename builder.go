@@ -29,6 +29,7 @@ type Builder interface {
 	Where(field string, Op Operator, val any) *SQLBuilder
 	WhereIn(field string, values []any) *SQLBuilder
 	WhereNotIn(field string, values []any) *SQLBuilder
+	WhereBetween(field string, start any, end any) *SQLBuilder
 	WhereFunc(statement string, b func(b Builder) *SQLBuilder) *SQLBuilder
 	Join(table string, first string, operator string, second string) *SQLBuilder
 	LeftJoin(table string, first string, operator string, second string) *SQLBuilder
@@ -201,6 +202,16 @@ func (s *SQLBuilder) WhereNotIn(field string, values []any) *SQLBuilder {
 	s.statement.WhereNotInStatements = append(s.statement.WhereNotInStatements, WhereNotIn{
 		Field:  field,
 		Values: values,
+	})
+
+	return s
+}
+
+func (s *SQLBuilder) WhereBetween(field string, start any, end any) *SQLBuilder {
+	s.statement.WhereBetweenStatements = append(s.statement.WhereBetweenStatements, WhereBetween{
+		Field: field,
+		Start: start,
+		End:   end,
 	})
 
 	return s
