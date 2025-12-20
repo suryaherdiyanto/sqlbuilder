@@ -131,6 +131,17 @@ type InsertStatement struct {
 	Rows  []map[string]any
 }
 
+type UpdateStatement struct {
+	Table                     string
+	Rows                      map[string]any
+	WhereStatements           []Where
+	WhereInStatements         []WhereIn
+	WhereNotInStatements      []WhereNotIn
+	WhereBetweenStatements    []WhereBetween
+	WhereNotBetweenStatements []WhereNotBetween
+	Values                    []any
+}
+
 func (s *SelectStatement) ParseWheres() string {
 	stmt := ""
 	for i, v := range s.WhereStatements {
@@ -370,6 +381,107 @@ func (si *InsertStatement) Parse() string {
 	values = strings.TrimRight(values, ",")
 
 	stmt := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", si.Table, columns, values)
+
+	return stmt
+}
+
+func (su *UpdateStatement) Parse() string {
+	stmt := fmt.Sprintf("UPDATE %s SET ", su.Table)
+	for k, v := range su.Rows {
+		stmt += fmt.Sprintf("`%s` = ?, ", k)
+		su.Values = append(su.Values, v)
+	}
+
+	stmt = strings.TrimRight(stmt, ", ")
+
+	if len(su.WhereStatements) > 0 || len(su.WhereBetweenStatements) > 0 || len(su.WhereNotBetweenStatements) > 0 || len(su.WhereInStatements) > 0 || len(su.WhereNotInStatements) > 0 {
+		stmt += " WHERE "
+	}
+
+	stmt += su.ParseWheres()
+
+	stmt += su.ParseWhereBetweens()
+
+	stmt += su.ParseWhereNotBetweens()
+
+	stmt += su.ParseWhereIn()
+
+	stmt += su.ParseWhereNotIn()
+
+	return stmt
+}
+
+func (s *UpdateStatement) ParseWheres() string {
+	stmt := ""
+	for i, v := range s.WhereStatements {
+		if i >= 1 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+
+		stmt += v.Parse()
+		s.Values = append(s.Values, v.Value)
+	}
+	return stmt
+}
+
+func (s *UpdateStatement) ParseWhereIn() string {
+	stmt := ""
+	if len(s.WhereStatements) > 0 {
+		for _, v := range s.WhereInStatements {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+	}
+
+	if len(s.WhereInStatements) > 0 {
+		for _, v := range s.WhereInStatements {
+			stmt += v.Parse()
+			s.Values = append(s.Values, v.Values...)
+		}
+	}
+
+	return stmt
+}
+
+func (s *UpdateStatement) ParseWhereNotIn() string {
+	stmt := ""
+	if len(s.WhereStatements) > 0 {
+		for _, v := range s.WhereNotInStatements {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+	}
+
+	if len(s.WhereNotInStatements) > 0 {
+		for _, v := range s.WhereNotInStatements {
+			stmt += v.Parse()
+			s.Values = append(s.Values, v.Values...)
+		}
+	}
+
+	return stmt
+}
+
+func (s *UpdateStatement) ParseWhereBetweens() string {
+	stmt := ""
+	for i, v := range s.WhereBetweenStatements {
+		if i >= 1 || len(s.WhereStatements) > 0 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+		stmt += v.Parse()
+		s.Values = append(s.Values, v.Start, v.End)
+	}
+
+	return stmt
+}
+
+func (s *UpdateStatement) ParseWhereNotBetweens() string {
+	stmt := ""
+	for i, v := range s.WhereNotBetweenStatements {
+		if i >= 1 || len(s.WhereStatements) > 0 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+		stmt += v.Parse()
+		s.Values = append(s.Values, v.Start, v.End)
+	}
 
 	return stmt
 }

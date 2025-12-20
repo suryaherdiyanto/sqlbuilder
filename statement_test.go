@@ -401,3 +401,27 @@ func TestInsertStatement(t *testing.T) {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 }
+
+func TestUpdateStatement(t *testing.T) {
+	statement := UpdateStatement{
+		Table: "users",
+		Rows: map[string]any{
+			"name": "test",
+			"age":  25,
+		},
+		WhereStatements: []Where{
+			{
+				Field: "id",
+				Op:    OperatorEqual,
+				Value: 1,
+			},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "UPDATE users SET `name` = ?, `age` = ? WHERE id = ?"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
