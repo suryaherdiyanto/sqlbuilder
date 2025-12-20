@@ -381,3 +381,23 @@ func TestWhereNotInParsingWithSubquery(t *testing.T) {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 }
+
+func TestInsertStatement(t *testing.T) {
+	statement := InsertStatement{
+		Table: "users",
+		Rows: []map[string]any{
+			{
+				"name":  "John Doe",
+				"email": "johndoe@example.com",
+				"age":   30,
+			},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "INSERT INTO users(`name`,`email`,`age`) VALUES(?,?,?)"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
