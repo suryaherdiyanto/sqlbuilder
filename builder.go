@@ -16,11 +16,12 @@ const (
 )
 
 type SQLBuilder struct {
-	Dialect   string
-	sql       *sql.DB
-	tx        *sql.Tx
-	isTx      bool
-	statement SelectStatement
+	Dialect         string
+	sql             *sql.DB
+	tx              *sql.Tx
+	isTx            bool
+	statement       SelectStatement
+	insertStatement InsertStatement
 }
 
 type Builder interface {
@@ -83,24 +84,12 @@ func (b *SQLBuilder) Select(columns ...string) *SQLBuilder {
 	return b
 }
 
-func (s *SQLBuilder) Insert(data interface{}) (sql.Result, error) {
+func (s *SQLBuilder) Insert(data []map[string]any) *SQLBuilder {
 
-	// stmt, err := s.buildInsert(data)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// s.statement.Columns = stmt["columns"]
-	// s.statement.arguments = insertData
-	// s.statement.values = strings.Join(stmt["values"], ",")
-	// s.statement.Command = "INSERT"
-
-	ctx := context.Background()
-	return s.Exec(ctx)
+	s.insertStatement = InsertStatement{
+		Rows: data,
+	}
+	return s
 }
 
 func (s *SQLBuilder) Update(data interface{}) (sql.Result, error) {
@@ -129,49 +118,26 @@ func (s *SQLBuilder) Delete() (sql.Result, error) {
 }
 
 func (s *SQLBuilder) Table(table string) *SQLBuilder {
-	s.statement.Table = table
+	if !reflect.DeepEqual(s.statement, SelectStatement{}) {
+		s.statement.Table = table
+	}
+
+	if !reflect.DeepEqual(s.insertStatement, InsertStatement{}) {
+		s.insertStatement.Table = table
+	}
+
 	return s
 }
 
 func (s *SQLBuilder) GetSql() (string, error) {
-	// switch s.statement.Command {
-	// case "SELECT":
-	// 	stmt := fmt.Sprintf("SELECT %s FROM %s", strings.Join(s.statement.Columns, ","), s.statement.Table)
+	stmt := ""
+	if !reflect.DeepEqual(s.insertStatement, InsertStatement{}) {
+		stmt = s.insertStatement.Parse()
+	}
 
-	// 	if len(s.statement.Joins) > 0 {
-	// 		for _, join := range s.statement.Joins {
-	// 			stmt += fmt.Sprintf("%s", join)
-	// 		}
-	// 	}
-
-	// 	if s.statement.Where != "" {
-	// 		stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
-
-	// 		if s.statement.subquery != "" {
-	// 			stmt += fmt.Sprintf(" (%s)", s.statement.subquery)
-	// 		}
-	// 	}
-
-	// 	s.statement.SQL = stmt
-	// case "INSERT":
-	// 	stmt := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", s.statement.Table, strings.Join(s.statement.Columns, ","), s.statement.values)
-	// 	s.statement.SQL = stmt
-	// case "UPDATE":
-	// 	stmt := fmt.Sprintf("UPDATE %s %s", s.statement.Table, s.statement.setStatement)
-	// 	if s.statement.Where != "" {
-	// 		stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
-	// 	}
-	// 	s.statement.SQL = stmt
-	// case "DELETE":
-	// 	stmt := fmt.Sprintf("DELETE FROM %s", s.statement.Table)
-	// 	if s.statement.Where != "" {
-	// 		stmt += fmt.Sprintf(" WHERE %s", s.statement.Where)
-	// 	}
-	// 	s.statement.SQL = stmt
-	// default:
-	// 	return "", errors.New("Invalid command")
-	// }
-	stmt := s.statement.Parse()
+	if !reflect.DeepEqual(s.statement, SelectStatement{}) {
+		stmt = s.statement.Parse()
+	}
 
 	return stmt, nil
 }
@@ -311,7 +277,13 @@ func (s *SQLBuilder) OrderBy(column string, dir OrderDirection) *SQLBuilder {
 	return s
 }
 func (s *SQLBuilder) GroupBy(columns ...string) *SQLBuilder {
-	// s.statement.SQL += fmt.Sprintf(" GROUP BY %s", strings.Join(columns, ", "))
+	if len(s.statement.GroupByStatement.Fields) > 0 {
+		s.statement.GroupByStatement.Fields = append(s.statement.GroupByStatement.Fields, columns...)
+	} else {
+		s.statement.GroupByStatement = GroupBy{
+			Fields: columns,
+		}
+	}
 	return s
 }
 func (s *SQLBuilder) Limit(n int64) *SQLBuilder {
