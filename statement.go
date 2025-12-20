@@ -126,6 +126,11 @@ type GroupBy struct {
 	Fields []string
 }
 
+type InsertStatement struct {
+	Table string
+	Rows  []map[string]any
+}
+
 func (s *SelectStatement) ParseWheres() string {
 	stmt := ""
 	for i, v := range s.WhereStatements {
@@ -349,4 +354,22 @@ func (s *SelectStatement) Parse() string {
 	}
 
 	return fmt.Sprintf(stmt, fields, s.Table)
+}
+
+func (si *InsertStatement) Parse() string {
+	columns := ""
+	values := ""
+
+	if len(si.Rows) > 0 {
+		for k, _ := range si.Rows[0] {
+			columns += "`" + k + "`" + ","
+			values += "?,"
+		}
+	}
+	columns = strings.TrimRight(columns, ",")
+	values = strings.TrimRight(values, ",")
+
+	stmt := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", si.Table, columns, values)
+
+	return stmt
 }
