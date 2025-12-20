@@ -197,6 +197,19 @@ func TestWhereFuncSubquery(t *testing.T) {
 	}
 }
 
+func TestGroupBy(t *testing.T) {
+	builder = New("sqlite", db)
+	builder.Select("*")
+
+	builder.
+		Table("users").
+		GroupBy("age", "role")
+
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users GROUP BY age,role" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
 // func TestExecuteUpdateStatement(t *testing.T) {
 // 	teardownSuite := setupSuite(t)
 // 	defer teardownSuite(t)
