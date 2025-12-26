@@ -425,3 +425,23 @@ func TestUpdateStatement(t *testing.T) {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 }
+
+func TestDeleteStatement(t *testing.T) {
+	statement := DeleteStatement{
+		Table: "users",
+		WhereStatements: []Where{
+			{
+				Field: "id",
+				Op:    OperatorEqual,
+				Value: 1,
+			},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "DELETE FROM users WHERE id = ?"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
