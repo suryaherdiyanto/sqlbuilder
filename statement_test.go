@@ -75,6 +75,12 @@ func TestSimpleSelectStatement(t *testing.T) {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 
+	arguments := statement.GetArguments()
+
+	if len(arguments) != 1 {
+		t.Errorf("Expected 1 argument, but got: %d", len(arguments))
+	}
+
 }
 
 func TestSimpleStatementWithLimitAndOffset(t *testing.T) {
