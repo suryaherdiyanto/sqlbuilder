@@ -72,6 +72,27 @@ type SelectStatement struct {
 	HasNotExistsClause        bool
 }
 
+type UpdateStatement struct {
+	Table                     string
+	Rows                      map[string]any
+	WhereStatements           []Where
+	WhereInStatements         []WhereIn
+	WhereNotInStatements      []WhereNotIn
+	WhereBetweenStatements    []WhereBetween
+	WhereNotBetweenStatements []WhereNotBetween
+	Values                    []any
+}
+
+type DeleteStatement struct {
+	Table                     string
+	WhereStatements           []Where
+	WhereInStatements         []WhereIn
+	WhereNotInStatements      []WhereNotIn
+	WhereBetweenStatements    []WhereBetween
+	WhereNotBetweenStatements []WhereNotBetween
+	Values                    []any
+}
+
 type WhereIn struct {
 	Field        string
 	Values       []any
@@ -129,27 +150,6 @@ type GroupBy struct {
 type InsertStatement struct {
 	Table string
 	Rows  []map[string]any
-}
-
-type UpdateStatement struct {
-	Table                     string
-	Rows                      map[string]any
-	WhereStatements           []Where
-	WhereInStatements         []WhereIn
-	WhereNotInStatements      []WhereNotIn
-	WhereBetweenStatements    []WhereBetween
-	WhereNotBetweenStatements []WhereNotBetween
-	Values                    []any
-}
-
-type DeleteStatement struct {
-	Table                     string
-	WhereStatements           []Where
-	WhereInStatements         []WhereIn
-	WhereNotInStatements      []WhereNotIn
-	WhereBetweenStatements    []WhereBetween
-	WhereNotBetweenStatements []WhereNotBetween
-	Values                    []any
 }
 
 func (s *SelectStatement) ParseWheres() string {
