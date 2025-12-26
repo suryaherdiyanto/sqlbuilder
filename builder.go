@@ -20,8 +20,11 @@ type SQLBuilder struct {
 	sql             *sql.DB
 	tx              *sql.Tx
 	isTx            bool
+	tempTable       string
 	statement       SelectStatement
 	insertStatement InsertStatement
+	updateStatement UpdateStatement
+	deleteStatement DeleteStatement
 }
 
 type Builder interface {
@@ -79,67 +82,65 @@ func (s *SQLBuilder) Begin(tx func(s *SQLBuilder) error) error {
 
 func (b *SQLBuilder) Select(columns ...string) *SQLBuilder {
 	b.statement = SelectStatement{
+		Table:   b.tempTable,
 		Columns: columns,
 	}
+
 	return b
 }
 
 func (s *SQLBuilder) Insert(data []map[string]any) *SQLBuilder {
-
 	s.insertStatement = InsertStatement{
-		Rows: data,
+		Table: s.tempTable,
+		Rows:  data,
 	}
+
 	return s
 }
 
-func (s *SQLBuilder) Update(data interface{}) (sql.Result, error) {
-	// stmt, err := s.buildUpdate(data)
-	// if err != nil {
-	// 	return nil, err
-	// }
+func (s *SQLBuilder) Update(data map[string]any) *SQLBuilder {
+	s.updateStatement = UpdateStatement{
+		Table: s.tempTable,
+	}
 
-	// args, err := s.extractData(data)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// s.statement.arguments = append(s.statement.arguments, args...)
-	// s.statement.setStatement = stmt
-	// s.statement.Command = "UPDATE"
-	ctx := context.Background()
-
-	return s.Exec(ctx)
+	return s
 }
 
-func (s *SQLBuilder) Delete() (sql.Result, error) {
-	// s.statement.Command = "DELETE"
-	ctx := context.Background()
-	return s.Exec(ctx)
+func (s *SQLBuilder) Delete() *SQLBuilder {
+	s.deleteStatement = DeleteStatement{
+		Table: s.tempTable,
+	}
+
+	return s
 }
 
 func (s *SQLBuilder) Table(table string) *SQLBuilder {
+	s.tempTable = table
+
 	if !reflect.DeepEqual(s.statement, SelectStatement{}) {
 		s.statement.Table = table
+		return s
 	}
 
 	if !reflect.DeepEqual(s.insertStatement, InsertStatement{}) {
 		s.insertStatement.Table = table
+		return s
 	}
 
 	return s
 }
 
 func (s *SQLBuilder) GetSql() (string, error) {
-	stmt := ""
-	if !reflect.DeepEqual(s.insertStatement, InsertStatement{}) {
-		stmt = s.insertStatement.Parse()
-	}
 
 	if !reflect.DeepEqual(s.statement, SelectStatement{}) {
-		stmt = s.statement.Parse()
+		return s.statement.Parse(), nil
 	}
 
-	return stmt, nil
+	if !reflect.DeepEqual(s.insertStatement, InsertStatement{}) {
+		return s.insertStatement.Parse(), nil
+	}
+
+	return "", errors.New("no valid statement found")
 }
 
 func (s *SQLBuilder) GetArguments() []interface{} {
