@@ -189,6 +189,10 @@ func (s *SelectStatement) Parse() string {
 	return fmt.Sprintf(stmt, fields, s.Table)
 }
 
+func (s *SelectStatement) GetArguments() []any {
+	return s.Values
+}
+
 func (si *InsertStatement) Parse() string {
 	columns := ""
 	values := ""
