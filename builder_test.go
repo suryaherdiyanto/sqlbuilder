@@ -1,13 +1,14 @@
 package sqlbuilder
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var db, _ = sql.Open("sqlite3", ":memory:")
+var db *sql.DB
 var builder *SQLBuilder
 
 type User struct {
@@ -17,8 +18,8 @@ type User struct {
 	Age      int    `db:"age"`
 }
 
-func setupSuite(tb testing.TB) func(tb testing.TB) {
-	db.Exec(`
+func seed(db *sql.DB) error {
+	_, err := db.Exec(`
 		CREATE TABLE users(
 			id integer primary key,
 			username TEXT,
@@ -27,25 +28,23 @@ func setupSuite(tb testing.TB) func(tb testing.TB) {
 		)
 	`)
 
-	db.Exec(`
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`
 		INSERT INTO users values(null, 'johndoe', 'johndoe@example.com', 35);
-	`)
-	db.Exec(`
 		INSERT INTO users values(null, 'daniel', 'daniel@example.com', 32);
-	`)
-	db.Exec(`
 		INSERT INTO users values(null, 'samuel', 'samuel@example.com', 28);
-	`)
-	db.Exec(`
 		INSERT INTO users values(null, 'dirt', 'dirt@example.com', 20);
-	`)
-	db.Exec(`
 		INSERT INTO users values(null, 'chris', 'chris@example.com', 25);
 	`)
 
-	return func(tb testing.TB) {
-		db.Exec("DROP table users")
+	if err != nil {
+		return err
 	}
+
+	return nil
 }
 
 func TestBuilder(t *testing.T) {
@@ -215,6 +214,64 @@ func TestGroupBy(t *testing.T) {
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users GROUP BY age,role" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
+func TestExecuteSelectStatement(t *testing.T) {
+
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = seed(dba)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var users []User
+	builder := New("sqlite", dba)
+	context := context.Background()
+	err = builder.Select("*").Table("users").Get(&users, context)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(users) != 5 {
+		t.Errorf("Expected return %d of users, but got %d", 5, len(users))
+	}
+}
+
+func TestExecuteWithWhereStatement(t *testing.T) {
+
+	user := new(User)
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = seed(dba)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	builder := New("sqlite", dba)
+	context := context.Background()
+	err = builder.Select("*").Table("users").Where("id", "=", 1).Limit(1).Get(user, context)
+
+	if err != nil {
+		arguments := builder.GetArguments()
+		stmt, _ := builder.GetSql()
+
+		t.Errorf("SQL: %s", stmt)
+		t.Errorf("Arguments: %v", arguments)
+		t.Error(err)
+	}
+
+	if user.Email != "johndoe@example.com" {
+		t.Errorf("Expected user email is johndoe@example.com, but got: %s", user.Email)
 	}
 }
 

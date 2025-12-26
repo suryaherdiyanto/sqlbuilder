@@ -143,8 +143,8 @@ func (s *SQLBuilder) GetSql() (string, error) {
 	return "", errors.New("no valid statement found")
 }
 
-func (s *SQLBuilder) GetArguments() []interface{} {
-	return make([]interface{}, 0)
+func (s *SQLBuilder) GetArguments() []any {
+	return s.statement.Values
 }
 
 func (s *SQLBuilder) Where(field string, Op Operator, val any) *SQLBuilder {
@@ -296,22 +296,7 @@ func (s *SQLBuilder) Offset(n int64) *SQLBuilder {
 	return s
 }
 
-func (s *SQLBuilder) Find(d interface{}, ctx context.Context) error {
-	rows, err := s.runQuery(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer rows.Close()
-
-	if rows.Next() {
-		return ScanStruct(d, rows)
-	}
-
-	return nil
-
-}
-func (b *SQLBuilder) Get(d interface{}, ctx context.Context) error {
+func (b *SQLBuilder) Get(d any, ctx context.Context) error {
 	rows, err := b.runQuery(ctx)
 	if err != nil {
 		return err
@@ -319,8 +304,23 @@ func (b *SQLBuilder) Get(d interface{}, ctx context.Context) error {
 
 	defer rows.Close()
 
-	if err = ScanAll(d, rows); err != nil {
-		return err
+	ref := reflect.TypeOf(d)
+	if ref.Kind() == reflect.Ptr {
+		ref = ref.Elem()
+	}
+
+	if ref.Kind() == reflect.Struct {
+		if rows.Next() {
+			if err = ScanStruct(d, rows); err != nil {
+				return err
+			}
+		}
+	}
+
+	if ref.Kind() == reflect.Slice {
+		if err = ScanAll(d, rows); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -341,6 +341,7 @@ func (b *SQLBuilder) Scan(d interface{}) error {
 }
 func (s *SQLBuilder) Exec(ctx context.Context) (sql.Result, error) {
 	statement, err := s.GetSql()
+	arguments := s.GetArguments()
 	if err != nil {
 		return nil, err
 	}
@@ -349,12 +350,12 @@ func (s *SQLBuilder) Exec(ctx context.Context) (sql.Result, error) {
 		// return s.tx.ExecContext(ctx, statement, s.statement.arguments...)
 	}
 
-	// return s.sql.ExecContext(ctx, statement, s.statement.arguments...)
-	return s.sql.ExecContext(ctx, statement)
+	return s.sql.ExecContext(ctx, statement, arguments...)
 }
 
 func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
 	sql, err := s.GetSql()
+	arguments := s.GetArguments()
 	if err != nil {
 		return nil, err
 	}
@@ -363,8 +364,7 @@ func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
 		// return s.tx.QueryContext(ctx, sql, s.statement.arguments...)
 	}
 
-	// return s.sql.QueryContext(ctx, sql, s.statement.arguments...)
-	return s.sql.QueryContext(ctx, sql)
+	return s.sql.QueryContext(ctx, sql, arguments...)
 }
 
 func (s *SQLBuilder) extractData(data interface{}) ([]interface{}, error) {
