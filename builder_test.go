@@ -55,6 +55,14 @@ func TestBuilder(t *testing.T) {
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
+
+	builder = New("sqlite", db)
+	builder.Table("users").Select("id", "username", "email")
+
+	if sql, _ := builder.GetSql(); sql != "SELECT id,username,email FROM users" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+
 }
 
 func TestWithWhere(t *testing.T) {
