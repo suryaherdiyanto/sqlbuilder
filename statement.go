@@ -57,7 +57,9 @@ func (s *SelectStatement) ParseWheres() string {
 		}
 
 		stmt += v.Parse()
-		s.Values = append(s.Values, v.Value)
+		if v.Value != nil {
+			s.Values = append(s.Values, v.Value)
+		}
 	}
 	return stmt
 }
