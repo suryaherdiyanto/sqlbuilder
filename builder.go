@@ -144,7 +144,14 @@ func (s *SQLBuilder) GetSql() (string, error) {
 }
 
 func (s *SQLBuilder) GetArguments() []any {
-	return s.statement.Values
+	values := s.statement.Values
+	for _, v := range s.statement.WhereStatements {
+		if len(v.SubStatement.Values) > 0 {
+			values = append(values, v.SubStatement.Values...)
+		}
+	}
+
+	return values
 }
 
 func (s *SQLBuilder) Where(field string, Op Operator, val any) *SQLBuilder {
