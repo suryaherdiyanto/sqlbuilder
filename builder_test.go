@@ -275,6 +275,45 @@ func TestExecuteWithWhereStatement(t *testing.T) {
 	}
 }
 
+func TestExecuteSubQuery(t *testing.T) {
+	user := new(User)
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = seed(dba)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	builder := New("sqlite", dba)
+	context := context.Background()
+	builder = builder.
+		Select("*").
+		Table("users").
+		WhereFunc("age", "=", func(b Builder) *SQLBuilder {
+			return b.Select("MIN(age)").Table("users")
+		}).
+		Limit(1)
+
+	err = builder.Get(user, context)
+
+	if err != nil {
+		arguments := builder.GetArguments()
+		stmt, _ := builder.GetSql()
+
+		t.Errorf("SQL: %s", stmt)
+		t.Errorf("Arguments: %v", arguments)
+		t.Error(err)
+	}
+
+	if user.Age != 20 {
+		t.Errorf("Expected user age is 20, but got: %d", user.Age)
+	}
+}
+
 // func TestExecuteUpdateStatement(t *testing.T) {
 // 	teardownSuite := setupSuite(t)
 // 	defer teardownSuite(t)
