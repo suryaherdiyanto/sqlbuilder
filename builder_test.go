@@ -314,6 +314,46 @@ func TestExecuteSubQuery(t *testing.T) {
 	}
 }
 
+func TestExecuteInsert(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = seed(dba)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	context := context.Background()
+	builder := New("sqlite", dba)
+
+	res, err := builder.Table("users").Insert([]map[string]any{
+		{
+			"username": "alice",
+			"email":    "alice@example.com",
+			"age":      29,
+		},
+	}).Exec(context)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rows, err := res.RowsAffected()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if rows <= 0 {
+		t.Errorf("Expected rows affected to be greater than 0, but got: %d", rows)
+	}
+
+}
+
 // func TestExecuteUpdateStatement(t *testing.T) {
 // 	teardownSuite := setupSuite(t)
 // 	defer teardownSuite(t)
@@ -438,29 +478,6 @@ func TestExecuteSubQuery(t *testing.T) {
 // 	}
 
 // }
-
-// func TestExecuteInsert(t *testing.T) {
-// 	teardownSuite := setupSuite(t)
-// 	defer teardownSuite(t)
-
-// 	type UserRequest struct {
-// 		Username string `db:"username"`
-// 		Email    string `db:"email"`
-// 		Age      int    `db:"age"`
-// 	}
-
-// 	user := &UserRequest{
-// 		Username: "johndoe",
-// 		Email:    "johndoe@example.com",
-// 		Age:      35,
-// 	}
-
-// 	builder = New("sqlite", db)
-// 	result, err := builder.Table("users").Insert(user)
-
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
 
 // 	expected := "INSERT INTO users(username,email,age) VALUES(?,?,?)"
 
