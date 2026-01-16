@@ -144,10 +144,21 @@ func (s *SQLBuilder) GetSql() (string, error) {
 }
 
 func (s *SQLBuilder) GetArguments() []any {
-	values := s.statement.Values
-	for _, v := range s.statement.WhereStatements {
-		if len(v.SubStatement.Values) > 0 {
-			values = append(values, v.SubStatement.Values...)
+
+	values := []any{}
+	if !reflect.DeepEqual(s.statement, SelectStatement{}) {
+		for _, v := range s.statement.WhereStatements {
+			if len(v.SubStatement.Values) > 0 {
+				values = append(values, v.SubStatement.Values...)
+			}
+		}
+	}
+
+	if !reflect.DeepEqual(s.insertStatement, InsertStatement{}) {
+		for _, row := range s.insertStatement.Rows {
+			for _, val := range row {
+				values = append(values, val)
+			}
 		}
 	}
 
