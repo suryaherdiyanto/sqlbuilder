@@ -147,11 +147,7 @@ func (s *SQLBuilder) GetArguments() []any {
 
 	values := []any{}
 	if !reflect.DeepEqual(s.statement, SelectStatement{}) {
-		for _, v := range s.statement.WhereStatements {
-			if len(v.SubStatement.Values) > 0 {
-				values = append(values, v.SubStatement.Values...)
-			}
-		}
+		values = append(values, s.statement.GetArguments()...)
 	}
 
 	if !reflect.DeepEqual(s.insertStatement, InsertStatement{}) {
