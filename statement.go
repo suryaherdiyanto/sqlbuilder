@@ -19,24 +19,14 @@ type SelectStatement struct {
 }
 
 type UpdateStatement struct {
-	Table                     string
-	Rows                      map[string]any
-	WhereStatements           []Where
-	WhereInStatements         []WhereIn
-	WhereNotInStatements      []WhereNotIn
-	WhereBetweenStatements    []WhereBetween
-	WhereNotBetweenStatements []WhereNotBetween
-	Values                    []any
+	Table string
+	Rows  map[string]any
+	WhereStatements
 }
 
 type DeleteStatement struct {
-	Table                     string
-	WhereStatements           []Where
-	WhereInStatements         []WhereIn
-	WhereNotInStatements      []WhereNotIn
-	WhereBetweenStatements    []WhereBetween
-	WhereNotBetweenStatements []WhereNotBetween
-	Values                    []any
+	Table string
+	WhereStatements
 }
 
 type WhereStatements struct {
@@ -228,197 +218,23 @@ func (su *UpdateStatement) Parse() string {
 
 	stmt = strings.TrimRight(stmt, ", ")
 
-	if len(su.WhereStatements) > 0 || len(su.WhereBetweenStatements) > 0 || len(su.WhereNotBetweenStatements) > 0 || len(su.WhereInStatements) > 0 || len(su.WhereNotInStatements) > 0 {
-		stmt += " WHERE "
-	}
-
-	stmt += su.ParseWheres()
-
-	stmt += su.ParseWhereBetweens()
-
-	stmt += su.ParseWhereNotBetweens()
-
-	stmt += su.ParseWhereIn()
-
-	stmt += su.ParseWhereNotIn()
-
-	return stmt
-}
-
-func (s *UpdateStatement) ParseWheres() string {
-	stmt := ""
-	for i, v := range s.WhereStatements {
-		if i >= 1 {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
-
-		stmt += v.Parse()
-		s.Values = append(s.Values, v.Value)
-	}
-	return stmt
-}
-
-func (s *UpdateStatement) ParseWhereIn() string {
-	stmt := ""
-	if len(s.WhereStatements) > 0 {
-		for _, v := range s.WhereInStatements {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
-	}
-
-	if len(s.WhereInStatements) > 0 {
-		for _, v := range s.WhereInStatements {
-			stmt += v.Parse()
-			s.Values = append(s.Values, v.Values...)
-		}
-	}
-
-	return stmt
-}
-
-func (s *UpdateStatement) ParseWhereNotIn() string {
-	stmt := ""
-	if len(s.WhereStatements) > 0 {
-		for _, v := range s.WhereNotInStatements {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
-	}
-
-	if len(s.WhereNotInStatements) > 0 {
-		for _, v := range s.WhereNotInStatements {
-			stmt += v.Parse()
-			s.Values = append(s.Values, v.Values...)
-		}
-	}
-
-	return stmt
-}
-
-func (s *UpdateStatement) ParseWhereBetweens() string {
-	stmt := ""
-	for i, v := range s.WhereBetweenStatements {
-		if i >= 1 || len(s.WhereStatements) > 0 {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
-		stmt += v.Parse()
-		s.Values = append(s.Values, v.Start, v.End)
-	}
-
-	return stmt
-}
-
-func (s *UpdateStatement) ParseWhereNotBetweens() string {
-	stmt := ""
-	for i, v := range s.WhereNotBetweenStatements {
-		if i >= 1 || len(s.WhereStatements) > 0 {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
-		stmt += v.Parse()
-		s.Values = append(s.Values, v.Start, v.End)
-	}
+	stmt += su.WhereStatements.ParseAllWheres()
 
 	return stmt
 }
 
 func (s *UpdateStatement) GetArguments() []any {
-	return s.Values
+	return s.WhereStatements.Values
 }
 
 func (d *DeleteStatement) Parse() string {
 	stmt := fmt.Sprintf("DELETE FROM %s", d.Table)
 
-	if len(d.WhereStatements) > 0 || len(d.WhereBetweenStatements) > 0 || len(d.WhereNotBetweenStatements) > 0 || len(d.WhereInStatements) > 0 || len(d.WhereNotInStatements) > 0 {
-		stmt += " WHERE "
-	}
-
-	stmt += d.ParseWheres()
-
-	stmt += d.ParseWhereBetweens()
-
-	stmt += d.ParseWhereNotBetweens()
-
-	stmt += d.ParseWhereIn()
-
-	stmt += d.ParseWhereNotIn()
-
-	return stmt
-}
-
-func (d *DeleteStatement) ParseWheres() string {
-	stmt := ""
-	for i, v := range d.WhereStatements {
-		if i >= 1 {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
-
-		stmt += v.Parse()
-		d.Values = append(d.Values, v.Value)
-	}
-	return stmt
-}
-
-func (d *DeleteStatement) ParseWhereIn() string {
-	stmt := ""
-	if len(d.WhereStatements) > 0 {
-		for _, v := range d.WhereInStatements {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
-	}
-
-	if len(d.WhereInStatements) > 0 {
-		for _, v := range d.WhereInStatements {
-			stmt += v.Parse()
-			d.Values = append(d.Values, v.Values...)
-		}
-	}
-
-	return stmt
-}
-
-func (d *DeleteStatement) ParseWhereNotIn() string {
-	stmt := ""
-	if len(d.WhereStatements) > 0 {
-		for _, v := range d.WhereNotInStatements {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
-	}
-
-	if len(d.WhereNotInStatements) > 0 {
-		for _, v := range d.WhereNotInStatements {
-			stmt += v.Parse()
-			d.Values = append(d.Values, v.Values...)
-		}
-	}
-
-	return stmt
-}
-
-func (d *DeleteStatement) ParseWhereBetweens() string {
-	stmt := ""
-	for i, v := range d.WhereBetweenStatements {
-		if i >= 1 || len(d.WhereStatements) > 0 {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
-		stmt += v.Parse()
-		d.Values = append(d.Values, v.Start, v.End)
-	}
-
-	return stmt
-}
-
-func (d *DeleteStatement) ParseWhereNotBetweens() string {
-	stmt := ""
-	for i, v := range d.WhereNotBetweenStatements {
-		if i >= 1 || len(d.WhereStatements) > 0 {
-			stmt += fmt.Sprintf(" %s ", v.Conj)
-		}
-		stmt += v.Parse()
-		d.Values = append(d.Values, v.Start, v.End)
-	}
+	stmt += d.WhereStatements.ParseAllWheres()
 
 	return stmt
 }
 
 func (d *DeleteStatement) GetArguments() []any {
-	return d.Values
+	return d.WhereStatements.Values
 }
