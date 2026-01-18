@@ -28,6 +28,14 @@ type OrderParser interface {
 	Parse() string
 }
 
+type WhereStatementParser interface {
+	ParseWheres() string
+	ParseWhereIn() string
+	ParseWhereNotIn() string
+	ParseWhereBetween() string
+	ParseWhereNotBetween() string
+}
+
 type ClauseParser interface {
 	ParseWheres() string
 	ParseJoins() string
