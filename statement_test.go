@@ -350,11 +350,13 @@ func TestUpdateStatement(t *testing.T) {
 			"name": "test",
 			"age":  25,
 		},
-		WhereStatements: []Where{
-			{
-				Field: "id",
-				Op:    OperatorEqual,
-				Value: 1,
+		WhereStatements: WhereStatements{
+			Where: []Where{
+				{
+					Field: "id",
+					Op:    OperatorEqual,
+					Value: 1,
+				},
 			},
 		},
 	}
@@ -370,11 +372,13 @@ func TestUpdateStatement(t *testing.T) {
 func TestDeleteStatement(t *testing.T) {
 	statement := DeleteStatement{
 		Table: "users",
-		WhereStatements: []Where{
-			{
-				Field: "id",
-				Op:    OperatorEqual,
-				Value: 1,
+		WhereStatements: WhereStatements{
+			Where: []Where{
+				{
+					Field: "id",
+					Op:    OperatorEqual,
+					Value: 1,
+				},
 			},
 		},
 	}
