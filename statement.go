@@ -314,6 +314,10 @@ func (s *UpdateStatement) ParseWhereNotBetweens() string {
 	return stmt
 }
 
+func (s *UpdateStatement) GetArguments() []any {
+	return s.Values
+}
+
 func (d *DeleteStatement) Parse() string {
 	stmt := fmt.Sprintf("DELETE FROM %s", d.Table)
 
@@ -407,4 +411,8 @@ func (d *DeleteStatement) ParseWhereNotBetweens() string {
 	}
 
 	return stmt
+}
+
+func (d *DeleteStatement) GetArguments() []any {
+	return d.Values
 }
