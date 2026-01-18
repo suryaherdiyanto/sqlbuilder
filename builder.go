@@ -188,7 +188,7 @@ func (s *SQLBuilder) GetArguments() []any {
 }
 
 func (s *SQLBuilder) Where(field string, Op Operator, val any) *SQLBuilder {
-	s.statement.WhereStatements = append(s.statement.WhereStatements, Where{
+	s.statement.WhereStatements.Where = append(s.statement.WhereStatements.Where, Where{
 		Field: field,
 		Value: val,
 		Op:    Op,
@@ -198,7 +198,7 @@ func (s *SQLBuilder) Where(field string, Op Operator, val any) *SQLBuilder {
 }
 
 func (s *SQLBuilder) WhereOr(field string, Op Operator, val any) *SQLBuilder {
-	s.statement.WhereStatements = append(s.statement.WhereStatements, Where{
+	s.statement.WhereStatements.Where = append(s.statement.WhereStatements.Where, Where{
 		Field: field,
 		Value: val,
 		Op:    Op,
@@ -208,7 +208,7 @@ func (s *SQLBuilder) WhereOr(field string, Op Operator, val any) *SQLBuilder {
 }
 
 func (s *SQLBuilder) WhereIn(field string, values []any) *SQLBuilder {
-	s.statement.WhereInStatements = append(s.statement.WhereInStatements, WhereIn{
+	s.statement.WhereStatements.WhereIn = append(s.statement.WhereStatements.WhereIn, WhereIn{
 		Field:  field,
 		Values: values,
 	})
@@ -217,7 +217,7 @@ func (s *SQLBuilder) WhereIn(field string, values []any) *SQLBuilder {
 }
 
 func (s *SQLBuilder) WhereNotIn(field string, values []any) *SQLBuilder {
-	s.statement.WhereNotInStatements = append(s.statement.WhereNotInStatements, WhereNotIn{
+	s.statement.WhereStatements.WhereNotIn = append(s.statement.WhereStatements.WhereNotIn, WhereNotIn{
 		Field:  field,
 		Values: values,
 	})
@@ -226,7 +226,7 @@ func (s *SQLBuilder) WhereNotIn(field string, values []any) *SQLBuilder {
 }
 
 func (s *SQLBuilder) WhereBetween(field string, start any, end any) *SQLBuilder {
-	s.statement.WhereBetweenStatements = append(s.statement.WhereBetweenStatements, WhereBetween{
+	s.statement.WhereStatements.WhereBetween = append(s.statement.WhereStatements.WhereBetween, WhereBetween{
 		Field: field,
 		Start: start,
 		End:   end,
@@ -278,7 +278,7 @@ func (s *SQLBuilder) RightJoin(table string, first string, operator Operator, se
 }
 
 func (s *SQLBuilder) WhereFunc(field string, operator Operator, builder func(b Builder) *SQLBuilder) *SQLBuilder {
-	s.statement.WhereStatements = append(s.statement.WhereStatements, Where{
+	s.statement.WhereStatements.Where = append(s.statement.WhereStatements.Where, Where{
 		Field:        field,
 		Op:           operator,
 		SubStatement: builder(New(s.Dialect, s.sql)).statement,
@@ -290,7 +290,7 @@ func (s *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilde
 	newBuilder := builder(New(s.Dialect, s.sql))
 
 	s.statement.HasExistsClause = true
-	s.statement.WhereStatements = append(s.statement.WhereStatements, Where{
+	s.statement.WhereStatements.Where = append(s.statement.WhereStatements.Where, Where{
 		Op:           OperatorExists,
 		SubStatement: newBuilder.statement,
 	})

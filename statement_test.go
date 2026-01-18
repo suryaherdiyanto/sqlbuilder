@@ -8,17 +8,19 @@ func TestStatementMultipleWhere(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		WhereStatements: []Where{
-			{
-				Field: "email",
-				Value: "johndoe@gmail.com",
-				Op:    OperatorEqual,
-			},
-			{
-				Field: "access_role",
-				Value: 3,
-				Op:    OperatorLessThan,
-				Conj:  ConjuctionAnd,
+		WhereStatements: WhereStatements{
+			Where: []Where{
+				{
+					Field: "email",
+					Value: "johndoe@gmail.com",
+					Op:    OperatorEqual,
+				},
+				{
+					Field: "access_role",
+					Value: 3,
+					Op:    OperatorLessThan,
+					Conj:  ConjuctionAnd,
+				},
 			},
 		},
 	}
@@ -34,17 +36,19 @@ func TestStatementWhereConjuctionOr(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		WhereStatements: []Where{
-			{
-				Field: "email",
-				Value: "johndoe@gmail.com",
-				Op:    OperatorEqual,
-			},
-			{
-				Field: "role",
-				Value: "admin",
-				Op:    OperatorLessThan,
-				Conj:  ConjuctionOr,
+		WhereStatements: WhereStatements{
+			Where: []Where{
+				{
+					Field: "email",
+					Value: "johndoe@gmail.com",
+					Op:    OperatorEqual,
+				},
+				{
+					Field: "role",
+					Value: "admin",
+					Op:    OperatorLessThan,
+					Conj:  ConjuctionOr,
+				},
 			},
 		},
 	}
@@ -60,11 +64,13 @@ func TestSimpleSelectStatement(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		WhereStatements: []Where{
-			{
-				Field: "email",
-				Value: "johndoe@gmail.com",
-				Op:    OperatorEqual,
+		WhereStatements: WhereStatements{
+			Where: []Where{
+				{
+					Field: "email",
+					Value: "johndoe@gmail.com",
+					Op:    OperatorEqual,
+				},
 			},
 		},
 	}
@@ -103,10 +109,12 @@ func TestStatementWhereIn(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		WhereInStatements: []WhereIn{
-			{
-				Field:  "email",
-				Values: []any{"johndoe@gmail.com", "test@example.com"},
+		WhereStatements: WhereStatements{
+			WhereIn: []WhereIn{
+				{
+					Field:  "email",
+					Values: []any{"johndoe@gmail.com", "test@example.com"},
+				},
 			},
 		},
 	}
@@ -123,18 +131,20 @@ func TestStatementWhereInWithConjuction(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		WhereInStatements: []WhereIn{
-			{
-				Field:  "email",
-				Values: []any{"johndoe@gmail.com", "test@example.com"},
-				Conj:   ConjuctionAnd,
+		WhereStatements: WhereStatements{
+			Where: []Where{
+				{
+					Field: "name",
+					Op:    OperatorEqual,
+					Value: "John",
+				},
 			},
-		},
-		WhereStatements: []Where{
-			{
-				Field: "name",
-				Op:    OperatorEqual,
-				Value: "John",
+			WhereIn: []WhereIn{
+				{
+					Field:  "email",
+					Values: []any{"johndoe@gmail.com", "test@example.com"},
+					Conj:   ConjuctionAnd,
+				},
 			},
 		},
 	}
@@ -151,10 +161,12 @@ func TestStatementWhereNotIn(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		WhereNotInStatements: []WhereNotIn{
-			{
-				Field:  "email",
-				Values: []any{"johndoe@gmail.com", "test@example.com"},
+		WhereStatements: WhereStatements{
+			WhereNotIn: []WhereNotIn{
+				{
+					Field:  "email",
+					Values: []any{"johndoe@gmail.com", "test@example.com"},
+				},
 			},
 		},
 	}
@@ -183,11 +195,13 @@ func TestStatementWithJoin(t *testing.T) {
 				},
 			},
 		},
-		WhereStatements: []Where{
-			{
-				Field: "orders.total",
-				Op:    OperatorGreaterThan,
-				Value: 10000,
+		WhereStatements: WhereStatements{
+			Where: []Where{
+				{
+					Field: "orders.total",
+					Op:    OperatorGreaterThan,
+					Value: 10000,
+				},
 			},
 		},
 	}
@@ -204,18 +218,22 @@ func TestWithSubStatementWhere(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"*"},
-		WhereStatements: []Where{
-			{
-				Field: "roles_id",
-				Op:    OperatorEqual,
-				SubStatement: SelectStatement{
-					Table:   "roles",
-					Columns: []string{"id"},
-					WhereStatements: []Where{
-						{
-							Field: "roles.id",
-							Op:    OperatorEqual,
-							Value: 3,
+		WhereStatements: WhereStatements{
+			Where: []Where{
+				{
+					Field: "roles_id",
+					Op:    OperatorEqual,
+					SubStatement: SelectStatement{
+						Table:   "roles",
+						Columns: []string{"id"},
+						WhereStatements: WhereStatements{
+							Where: []Where{
+								{
+									Field: "roles.id",
+									Op:    OperatorEqual,
+									Value: 3,
+								},
+							},
 						},
 					},
 				},
@@ -252,17 +270,21 @@ func TestWhereInParsingWithSubquery(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"*"},
-		WhereInStatements: []WhereIn{
-			{
-				Field: "id",
-				SubStatement: SelectStatement{
-					Table:   "orders",
-					Columns: []string{"user_id"},
-					WhereStatements: []Where{
-						{
-							Field: "total",
-							Op:    OperatorGreaterThan,
-							Value: 100,
+		WhereStatements: WhereStatements{
+			WhereIn: []WhereIn{
+				{
+					Field: "id",
+					SubStatement: SelectStatement{
+						Table:   "orders",
+						Columns: []string{"user_id"},
+						WhereStatements: WhereStatements{
+							Where: []Where{
+								{
+									Field: "total",
+									Op:    OperatorGreaterThan,
+									Value: 100,
+								},
+							},
 						},
 					},
 				},
@@ -281,12 +303,14 @@ func TestWhereNotInParsingWithSubquery(t *testing.T) {
 	statement := SelectStatement{
 		Table:   "users",
 		Columns: []string{"*"},
-		WhereNotInStatements: []WhereNotIn{
-			{
-				Field: "id",
-				SubStatement: SelectStatement{
-					Table:   "banned_users",
-					Columns: []string{"user_id"},
+		WhereStatements: WhereStatements{
+			WhereNotIn: []WhereNotIn{
+				{
+					Field: "id",
+					SubStatement: SelectStatement{
+						Table:   "banned_users",
+						Columns: []string{"user_id"},
+					},
 				},
 			},
 		},
