@@ -4,9 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"reflect"
-	"strings"
 )
 
 const (
@@ -424,75 +422,4 @@ func (s *SQLBuilder) extractData(data interface{}) ([]interface{}, error) {
 	}
 
 	return result, nil
-}
-
-func (s *SQLBuilder) buildInsert(data interface{}) (map[string][]string, error) {
-	valRef := reflect.TypeOf(data)
-	if valRef.Kind() == reflect.Ptr {
-		valRef = valRef.Elem()
-	}
-
-	if valRef.Kind() != reflect.Struct {
-		return make(map[string][]string), errors.New("data must be a struct")
-	}
-
-	var columns []string
-	var values []string
-	placeholder := func() string {
-		switch s.Dialect {
-		case "pgsql":
-			return fmt.Sprintf(pgsqlPlaceholder, len(values)+1)
-		case "mysql":
-			return mysqlPlaceholder
-		case "sqlite":
-			return sqlitePlaceholder
-		default:
-			return mysqlPlaceholder
-		}
-	}
-
-	for i := 0; i < valRef.NumField(); i++ {
-		field := valRef.Field(i)
-		columns = append(columns, field.Tag.Get("db"))
-		values = append(values, placeholder())
-	}
-
-	return map[string][]string{
-		"columns": columns,
-		"values":  values,
-	}, nil
-}
-
-func (s *SQLBuilder) buildUpdate(data interface{}) (string, error) {
-	valRef := reflect.TypeOf(data)
-	if valRef.Kind() == reflect.Ptr {
-		valRef = valRef.Elem()
-	}
-
-	if valRef.Kind() != reflect.Struct {
-		return "", errors.New("data must be a struct")
-	}
-
-	var set []string
-	placeholder := func() string {
-		switch s.Dialect {
-		case "pgsql":
-			return fmt.Sprintf(pgsqlPlaceholder, len(set)+1)
-		case "mysql":
-			return mysqlPlaceholder
-		case "sqlite":
-			return sqlitePlaceholder
-		default:
-			return mysqlPlaceholder
-		}
-	}
-
-	for i := 0; i < valRef.NumField(); i++ {
-		field := valRef.Field(i)
-		set = append(set, fmt.Sprintf("%s = %s", field.Tag.Get("db"), placeholder()))
-	}
-
-	setStatement := fmt.Sprintf("%s", strings.Join(set, ", "))
-
-	return fmt.Sprintf("SET %s", setStatement), nil
 }
