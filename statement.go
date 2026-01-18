@@ -198,7 +198,7 @@ func (s *SelectStatement) Parse() string {
 }
 
 func (s *SelectStatement) GetArguments() []any {
-	return s.Values
+	return s.WhereStatements.Values
 }
 
 func (si *InsertStatement) Parse() string {
