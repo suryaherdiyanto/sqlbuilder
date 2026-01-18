@@ -127,6 +127,16 @@ func (s *SQLBuilder) Table(table string) *SQLBuilder {
 		return s
 	}
 
+	if !reflect.DeepEqual(s.updateStatement, UpdateStatement{}) {
+		s.updateStatement.Table = table
+		return s
+	}
+
+	if !reflect.DeepEqual(s.deleteStatement, DeleteStatement{}) {
+		s.deleteStatement.Table = table
+		return s
+	}
+
 	return s
 }
 
@@ -138,6 +148,14 @@ func (s *SQLBuilder) GetSql() (string, error) {
 
 	if !reflect.DeepEqual(s.insertStatement, InsertStatement{}) {
 		return s.insertStatement.Parse(), nil
+	}
+
+	if !reflect.DeepEqual(s.updateStatement, UpdateStatement{}) {
+		return s.updateStatement.Parse(), nil
+	}
+
+	if !reflect.DeepEqual(s.deleteStatement, DeleteStatement{}) {
+		return s.deleteStatement.Parse(), nil
 	}
 
 	return "", errors.New("no valid statement found")
@@ -156,6 +174,14 @@ func (s *SQLBuilder) GetArguments() []any {
 				values = append(values, val)
 			}
 		}
+	}
+
+	if !reflect.DeepEqual(s.updateStatement, UpdateStatement{}) {
+		values = append(values, s.updateStatement.GetArguments()...)
+	}
+
+	if !reflect.DeepEqual(s.deleteStatement, DeleteStatement{}) {
+		values = append(values, s.deleteStatement.GetArguments()...)
 	}
 
 	return values
