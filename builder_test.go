@@ -357,9 +357,12 @@ func TestExecuteUpdateStatement(t *testing.T) {
 		"age":      36,
 	}).Exec()
 
+	if sql, err := builder.GetSql(); err != nil {
+		t.Fatal(err)
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+
 	if err != nil {
-		sqlQuery, _ := builder.GetSql()
-		t.Errorf("SQL Query: %s", sqlQuery)
 		t.Fatal(err)
 	}
 
@@ -372,30 +375,38 @@ func TestExecuteUpdateStatement(t *testing.T) {
 	}
 }
 
-// func TestDeleteStatement(t *testing.T) {
-// 	teardownSuite := setupSuite(t)
-// 	defer teardownSuite(t)
+func TestExecuteDeleteStatement(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
 
-// 	builder = New("sqlite", db)
-// 	result, err := builder.Table("users").Where("username = ?", "johndoe").Delete()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
+	err = seed(dba)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	expected := "DELETE FROM users WHERE username = ?"
-// 	if sql, _ := builder.GetSql(); sql != expected {
-// 		t.Errorf("Unexpected SQL result, got: %s", sql)
-// 	}
+	builder = New("sqlite", dba)
+	result, err := builder.Table("users").Where("username", OperatorEqual, "johndoe").Delete().Exec()
 
-// 	if rowsAffected, err := result.RowsAffected(); err != nil {
-// 		t.Error(err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 		if rowsAffected <= 0 {
-// 			t.Errorf("Expected rows affected to be greater than 0, but got: %d", rowsAffected)
-// 		}
-// 	}
-// }
+	if sql, err := builder.GetSql(); err != nil {
+		t.Fatal(err)
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+
+	if rowsAffected, err := result.RowsAffected(); err != nil {
+		t.Error(err)
+
+		if rowsAffected <= 0 {
+			t.Errorf("Expected rows affected to be greater than 0, but got: %d", rowsAffected)
+		}
+	}
+}
 
 // func TestExecuteTransaction(t *testing.T) {
 // 	teardownSuite := setupSuite(t)

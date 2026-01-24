@@ -176,49 +176,64 @@ func (s *SQLBuilder) GetArguments() []any {
 }
 
 func (s *SQLBuilder) Where(field string, Op Operator, val any) *SQLBuilder {
-	s.statement.WhereStatements.Where = append(s.statement.WhereStatements.Where, Where{
+	where := Where{
 		Field: field,
 		Value: val,
 		Op:    Op,
 		Conj:  ConjuctionAnd,
-	})
+	}
+	s.statement.WhereStatements.Where = append(s.statement.WhereStatements.Where, where)
+	s.updateStatement.WhereStatements.Where = append(s.updateStatement.WhereStatements.Where, where)
+	s.deleteStatement.WhereStatements.Where = append(s.deleteStatement.WhereStatements.Where, where)
 	return s
 }
 
 func (s *SQLBuilder) WhereOr(field string, Op Operator, val any) *SQLBuilder {
-	s.statement.WhereStatements.Where = append(s.statement.WhereStatements.Where, Where{
+	where := Where{
 		Field: field,
 		Value: val,
 		Op:    Op,
 		Conj:  ConjuctionOr,
-	})
+	}
+	s.statement.WhereStatements.Where = append(s.statement.WhereStatements.Where, where)
+	s.updateStatement.WhereStatements.Where = append(s.updateStatement.WhereStatements.Where, where)
+	s.deleteStatement.WhereStatements.Where = append(s.deleteStatement.WhereStatements.Where, where)
 	return s
 }
 
 func (s *SQLBuilder) WhereIn(field string, values []any) *SQLBuilder {
-	s.statement.WhereStatements.WhereIn = append(s.statement.WhereStatements.WhereIn, WhereIn{
+	wherein := WhereIn{
 		Field:  field,
 		Values: values,
-	})
+	}
+	s.statement.WhereStatements.WhereIn = append(s.statement.WhereStatements.WhereIn, wherein)
+	s.updateStatement.WhereStatements.WhereIn = append(s.updateStatement.WhereStatements.WhereIn, wherein)
+	s.deleteStatement.WhereStatements.WhereIn = append(s.deleteStatement.WhereStatements.WhereIn, wherein)
 
 	return s
 }
 
 func (s *SQLBuilder) WhereNotIn(field string, values []any) *SQLBuilder {
-	s.statement.WhereStatements.WhereNotIn = append(s.statement.WhereStatements.WhereNotIn, WhereNotIn{
+	wherenotin := WhereNotIn{
 		Field:  field,
 		Values: values,
-	})
+	}
+	s.statement.WhereStatements.WhereNotIn = append(s.statement.WhereStatements.WhereNotIn, wherenotin)
+	s.statement.WhereStatements.WhereNotIn = append(s.updateStatement.WhereStatements.WhereNotIn, wherenotin)
+	s.statement.WhereStatements.WhereNotIn = append(s.deleteStatement.WhereStatements.WhereNotIn, wherenotin)
 
 	return s
 }
 
 func (s *SQLBuilder) WhereBetween(field string, start any, end any) *SQLBuilder {
-	s.statement.WhereStatements.WhereBetween = append(s.statement.WhereStatements.WhereBetween, WhereBetween{
+	wherebetween := WhereBetween{
 		Field: field,
 		Start: start,
 		End:   end,
-	})
+	}
+	s.statement.WhereStatements.WhereBetween = append(s.statement.WhereStatements.WhereBetween, wherebetween)
+	s.updateStatement.WhereStatements.WhereBetween = append(s.updateStatement.WhereStatements.WhereBetween, wherebetween)
+	s.deleteStatement.WhereStatements.WhereBetween = append(s.deleteStatement.WhereStatements.WhereBetween, wherebetween)
 
 	return s
 }
@@ -266,11 +281,14 @@ func (s *SQLBuilder) RightJoin(table string, first string, operator Operator, se
 }
 
 func (s *SQLBuilder) WhereFunc(field string, operator Operator, builder func(b Builder) *SQLBuilder) *SQLBuilder {
-	s.statement.WhereStatements.Where = append(s.statement.WhereStatements.Where, Where{
+	where := Where{
 		Field:        field,
 		Op:           operator,
 		SubStatement: builder(New(s.Dialect, s.sql)).statement,
-	})
+	}
+	s.statement.WhereStatements.Where = append(s.statement.WhereStatements.Where, where)
+	s.updateStatement.WhereStatements.Where = append(s.updateStatement.WhereStatements.Where, where)
+	s.deleteStatement.WhereStatements.Where = append(s.deleteStatement.WhereStatements.Where, where)
 	return s
 }
 
@@ -278,10 +296,13 @@ func (s *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilde
 	newBuilder := builder(New(s.Dialect, s.sql))
 
 	s.statement.HasExistsClause = true
-	s.statement.WhereStatements.Where = append(s.statement.WhereStatements.Where, Where{
+	where := Where{
 		Op:           OperatorExists,
 		SubStatement: newBuilder.statement,
-	})
+	}
+	s.statement.WhereStatements.Where = append(s.statement.WhereStatements.Where, where)
+	s.updateStatement.WhereStatements.Where = append(s.updateStatement.WhereStatements.Where, where)
+	s.deleteStatement.WhereStatements.Where = append(s.deleteStatement.WhereStatements.Where, where)
 
 	return s
 }
