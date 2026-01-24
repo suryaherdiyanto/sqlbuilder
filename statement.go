@@ -2,6 +2,7 @@ package sqlbuilder
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -192,28 +193,35 @@ func (s *SelectStatement) GetArguments() []any {
 }
 
 func (si *InsertStatement) Parse() string {
-	columns := ""
+	fields := ""
 	values := ""
 
 	if len(si.Rows) > 0 {
-		for k, _ := range si.Rows[0] {
-			columns += "`" + k + "`" + ","
+		vType := reflect.ValueOf(si.Rows)
+		columns := vType.Index(0).MapKeys()
+
+		for _, k := range columns {
+			fields += fmt.Sprintf("`%s`,", k)
 			values += "?,"
 		}
 	}
-	columns = strings.TrimRight(columns, ",")
+
+	fields = strings.TrimRight(fields, ",")
 	values = strings.TrimRight(values, ",")
 
-	stmt := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", si.Table, columns, values)
+	stmt := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", si.Table, fields, values)
 
 	return stmt
 }
 
 func (su *UpdateStatement) Parse() string {
 	stmt := fmt.Sprintf("UPDATE %s SET ", su.Table)
-	for k, v := range su.Rows {
+	vType := reflect.ValueOf(su.Rows)
+	columns := vType.MapKeys()
+
+	for _, k := range columns {
 		stmt += fmt.Sprintf("`%s` = ?, ", k)
-		su.Values = append(su.Values, v)
+		su.Values = append(su.Values, vType.MapIndex(k).Interface())
 	}
 
 	stmt = strings.TrimRight(stmt, ", ")
