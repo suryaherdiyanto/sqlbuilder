@@ -324,6 +324,11 @@ func TestWhereNotInParsingWithSubquery(t *testing.T) {
 }
 
 func TestInsertStatement(t *testing.T) {
+	type User struct {
+		Name  string `db:"name"`
+		Email string `db:"email"`
+		Age   int    `db:"age"`
+	}
 	statement := InsertStatement{
 		Table: "users",
 		Rows: []map[string]any{
@@ -336,7 +341,7 @@ func TestInsertStatement(t *testing.T) {
 	}
 
 	stmt := statement.Parse()
-	expected := "INSERT INTO users(`name`,`email`,`age`) VALUES(?,?,?)"
+	expected := "INSERT INTO users(`age`,`email`,`name`) VALUES(?,?,?)"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -362,7 +367,7 @@ func TestUpdateStatement(t *testing.T) {
 	}
 
 	stmt := statement.Parse()
-	expected := "UPDATE users SET `name` = ?, `age` = ? WHERE id = ?"
+	expected := "UPDATE users SET `age` = ?, `name` = ? WHERE id = ?"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
