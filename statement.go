@@ -97,6 +97,12 @@ func (ws *WhereStatements) ParseWhereNotIn() string {
 
 func (ws *WhereStatements) ParseWhereBetweens() string {
 	stmt := ""
+	if len(ws.Where) > 0 {
+		for _, v := range ws.WhereBetween {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+	}
+
 	for i, v := range ws.WhereBetween {
 		if i >= 1 || len(ws.Where) > 0 {
 			stmt += fmt.Sprintf(" %s ", v.Conj)
