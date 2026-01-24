@@ -413,22 +413,3 @@ func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
 
 	return s.sql.QueryContext(ctx, sql, arguments...)
 }
-
-func (s *SQLBuilder) extractData(data interface{}) ([]interface{}, error) {
-	valRef := reflect.ValueOf(data)
-	if valRef.Kind() == reflect.Ptr {
-		valRef = valRef.Elem()
-	}
-
-	if valRef.Kind() != reflect.Struct {
-		return nil, errors.New("data must be a struct")
-	}
-
-	var result []interface{}
-	for i := 0; i < valRef.NumField(); i++ {
-		field := valRef.Field(i)
-		result = append(result, field.Interface())
-	}
-
-	return result, nil
-}
