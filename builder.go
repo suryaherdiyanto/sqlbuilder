@@ -343,7 +343,37 @@ func (s *SQLBuilder) Offset(n int64) *SQLBuilder {
 	return s
 }
 
-func (b *SQLBuilder) Get(d any, ctx context.Context) error {
+func (b *SQLBuilder) Get(d any) error {
+	ctx := context.Background()
+	rows, err := b.runQuery(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	ref := reflect.TypeOf(d)
+	if ref.Kind() == reflect.Ptr {
+		ref = ref.Elem()
+	}
+
+	if ref.Kind() == reflect.Struct {
+		if rows.Next() {
+			if err = ScanStruct(d, rows); err != nil {
+				return err
+			}
+		}
+	}
+
+	if ref.Kind() == reflect.Slice {
+		if err = ScanAll(d, rows); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+func (b *SQLBuilder) GetContext(d any, ctx context.Context) error {
 	rows, err := b.runQuery(ctx)
 	if err != nil {
 		return err
@@ -386,7 +416,20 @@ func (b *SQLBuilder) Scan(d interface{}) error {
 
 	return nil
 }
-func (s *SQLBuilder) Exec(ctx context.Context) (sql.Result, error) {
+func (s *SQLBuilder) Exec() (sql.Result, error) {
+	statement, err := s.GetSql()
+	arguments := s.GetArguments()
+	if err != nil {
+		return nil, err
+	}
+
+	if s.isTx {
+		// return s.tx.ExecContext(ctx, statement, s.statement.arguments...)
+	}
+
+	return s.sql.Exec(statement, arguments...)
+}
+func (s *SQLBuilder) ExecContext(ctx context.Context) (sql.Result, error) {
 	statement, err := s.GetSql()
 	arguments := s.GetArguments()
 	if err != nil {
@@ -399,7 +442,6 @@ func (s *SQLBuilder) Exec(ctx context.Context) (sql.Result, error) {
 
 	return s.sql.ExecContext(ctx, statement, arguments...)
 }
-
 func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
 	sql, err := s.GetSql()
 	arguments := s.GetArguments()
