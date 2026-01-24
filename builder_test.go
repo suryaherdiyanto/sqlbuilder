@@ -282,7 +282,7 @@ func TestExecuteSubQuery(t *testing.T) {
 		Table("users").
 		Select("*").
 		WhereFunc("age", "=", func(b Builder) *SQLBuilder {
-			return b.Select("MIN(age)").Table("users")
+			return b.Table("users").Select("MIN(age)")
 		}).
 		Limit(1)
 
