@@ -48,7 +48,7 @@ func seed(db *sql.DB) error {
 
 func TestBuilder(t *testing.T) {
 	builder = New("sqlite", db)
-	builder.Select("*").Table("users")
+	builder.Table("users").Select("*")
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
@@ -65,7 +65,7 @@ func TestBuilder(t *testing.T) {
 
 func TestWithWhere(t *testing.T) {
 	builder = New("sqlite", db)
-	builder.Select("*").Table("users").Where("email", OperatorEqual, "johndoe@gmail.com")
+	builder.Table("users").Select("*").Where("email", OperatorEqual, "johndoe@gmail.com")
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email = ?" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
@@ -74,10 +74,9 @@ func TestWithWhere(t *testing.T) {
 
 func TestWithMultipleWhere(t *testing.T) {
 	builder = New("sqlite", db)
-	builder.Select("*")
+	builder.Table("users").Select("*")
 
 	builder.
-		Table("users").
 		Where("email", "=", "johndoe@gmail.com").
 		Where("access_role", "<", 3)
 
@@ -88,9 +87,9 @@ func TestWithMultipleWhere(t *testing.T) {
 
 func TestWhereIn(t *testing.T) {
 	builder = New("sqlite", db)
-	builder.Select("*")
+	builder.Table("users")
 
-	builder.Table("users").
+	builder.Select("*").
 		WhereIn("email", []any{"johndoe@example.com", "amal@example.com"})
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email IN(?,?)" {
@@ -100,19 +99,19 @@ func TestWhereIn(t *testing.T) {
 
 func TestWhereBetween(t *testing.T) {
 	builder = New("sqlite", db)
-	builder.Select("*")
+	builder.Table("users")
 
 	builder.
-		Table("users").
+		Select("*").
 		WhereBetween("age", 5, 10)
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE age BETWEEN ? AND ?" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 
-	builder = builder.Select("*")
+	builder = builder.Table("users")
 	builder.
-		Table("users").
+		Select("*").
 		WhereBetween("dob", "1995-02-01", "2000-01-01")
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE dob BETWEEN ? AND ?" {
@@ -122,10 +121,9 @@ func TestWhereBetween(t *testing.T) {
 
 func TestWhereOr(t *testing.T) {
 	builder = New("sqlite", db)
-	builder.Select("*")
+	builder.Table("users").Select("*")
 
 	builder.
-		Table("users").
 		Where("age", OperatorGreatherThanEqual, 18).
 		WhereOr("email", OperatorEqual, "johndoe@example.com")
 
@@ -136,10 +134,9 @@ func TestWhereOr(t *testing.T) {
 
 func TestJoin(t *testing.T) {
 	builder = New("sqlite", db)
-	builder.Select("*")
+	builder.Table("users").Select("*")
 
 	builder.
-		Table("users").
 		Join("roles", "id", "=", "user_id")
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users INNER JOIN roles ON users.id = roles.user_id" {
@@ -149,10 +146,9 @@ func TestJoin(t *testing.T) {
 
 func TestLeftJoin(t *testing.T) {
 	builder = New("sqlite", db)
-	builder.Select("*")
+	builder.Table("users").Select("*")
 
 	builder.
-		Table("users").
 		LeftJoin("roles", "id", OperatorEqual, "user_id")
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users LEFT JOIN roles ON users.id = roles.user_id" {
@@ -162,10 +158,9 @@ func TestLeftJoin(t *testing.T) {
 
 func TestRightJoin(t *testing.T) {
 	builder = New("sqlite", db)
-	builder.Select("*")
+	builder.Table("users").Select("*")
 
 	builder.
-		Table("users").
 		RightJoin("roles", "id", "=", "user_id")
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users RIGHT JOIN roles ON users.id = roles.user_id" {
@@ -175,12 +170,11 @@ func TestRightJoin(t *testing.T) {
 
 func TestWhereExists(t *testing.T) {
 	builder = New("sqlite", db)
-	builder.Select("*")
+	builder.Table("users").Select("*")
 
 	builder.
-		Table("users").
 		WhereExists(func(b Builder) *SQLBuilder {
-			return b.Select("*").Table("roles").Where("users.id", "=", "roles.user_id")
+			return b.Table("roles").Select("*").Where("users.id", "=", "roles.user_id")
 		})
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE EXISTS (SELECT * FROM roles WHERE users.id = ?)" {
@@ -190,12 +184,11 @@ func TestWhereExists(t *testing.T) {
 
 func TestWhereFuncSubquery(t *testing.T) {
 	builder = New("sqlite", db)
-	builder.Select("*")
+	builder.Table("users").Select("*")
 
 	builder.
-		Table("users").
 		WhereFunc("email", "=", func(b Builder) *SQLBuilder {
-			return b.Select("user_id").Table("roles").Where("users.id", "=", "roles.user_id")
+			return b.Table("roles").Select("user_id").Where("users.id", "=", "roles.user_id")
 		})
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email = (SELECT user_id FROM roles WHERE users.id = ?)" {
@@ -205,10 +198,9 @@ func TestWhereFuncSubquery(t *testing.T) {
 
 func TestGroupBy(t *testing.T) {
 	builder = New("sqlite", db)
-	builder.Select("*")
+	builder.Table("users").Select("*")
 
 	builder.
-		Table("users").
 		GroupBy("age", "role")
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users GROUP BY age,role" {
@@ -230,7 +222,7 @@ func TestExecuteSelectStatement(t *testing.T) {
 
 	var users []User
 	builder := New("sqlite", dba)
-	err = builder.Select("*").Table("users").Get(&users)
+	err = builder.Table("users").Select("*").Get(&users)
 
 	if err != nil {
 		t.Error(err)
@@ -256,7 +248,7 @@ func TestExecuteWithWhereStatement(t *testing.T) {
 	}
 
 	builder := New("sqlite", dba)
-	err = builder.Select("*").Table("users").Where("id", "=", 1).Limit(1).Get(user)
+	err = builder.Table("users").Select("*").Where("id", "=", 1).Limit(1).Get(user)
 
 	if err != nil {
 		arguments := builder.GetArguments()
@@ -287,8 +279,8 @@ func TestExecuteSubQuery(t *testing.T) {
 
 	builder := New("sqlite", dba)
 	builder = builder.
-		Select("*").
 		Table("users").
+		Select("*").
 		WhereFunc("age", "=", func(b Builder) *SQLBuilder {
 			return b.Select("MIN(age)").Table("users")
 		}).
@@ -349,39 +341,36 @@ func TestExecuteInsert(t *testing.T) {
 
 }
 
-// func TestExecuteUpdateStatement(t *testing.T) {
-// 	teardownSuite := setupSuite(t)
-// 	defer teardownSuite(t)
+func TestExecuteUpdateStatement(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
 
-// 	builder = New("sqlite", db)
-// 	type UserRequest struct {
-// 		Username string `db:"username"`
-// 		Age      int    `db:"age"`
-// 	}
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	user := &UserRequest{
-// 		Username: "johndoe",
-// 		Age:      31,
-// 	}
-// 	result, err := builder.Table("users").Where("id = ?", 1).Update(user)
+	err = seed(dba)
 
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
+	builder = New("sqlite", dba)
 
-// 	expected := "UPDATE users SET username = ?, age = ? WHERE id = ?"
-// 	if sql, _ := builder.GetSql(); sql != expected {
-// 		t.Errorf("Unexpected SQL result, got: %s", sql)
-// 	}
+	result, err := builder.Table("users").Where("id", OperatorEqual, 1).Update(map[string]any{
+		"username": "john_doe_updated",
+		"age":      36,
+	}).Exec()
 
-// 	if rowsAffected, err := result.RowsAffected(); err != nil {
-// 		t.Error(err)
+	if err != nil {
+		sqlQuery, _ := builder.GetSql()
+		t.Errorf("SQL Query: %s", sqlQuery)
+		t.Fatal(err)
+	}
 
-// 		if rowsAffected <= 0 {
-// 			t.Errorf("Expected rows affected to be greater than 0, but got: %d", rowsAffected)
-// 		}
-// 	}
-// }
+	if rowsAffected, err := result.RowsAffected(); err != nil {
+		t.Error(err)
+
+		if rowsAffected <= 0 {
+			t.Errorf("Expected rows affected to be greater than 0, but got: %d", rowsAffected)
+		}
+	}
+}
 
 // func TestDeleteStatement(t *testing.T) {
 // 	teardownSuite := setupSuite(t)
