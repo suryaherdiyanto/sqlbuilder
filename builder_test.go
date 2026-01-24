@@ -1,7 +1,6 @@
 package sqlbuilder
 
 import (
-	"context"
 	"database/sql"
 	"testing"
 
@@ -231,8 +230,7 @@ func TestExecuteSelectStatement(t *testing.T) {
 
 	var users []User
 	builder := New("sqlite", dba)
-	context := context.Background()
-	err = builder.Select("*").Table("users").Get(&users, context)
+	err = builder.Select("*").Table("users").Get(&users)
 
 	if err != nil {
 		t.Error(err)
@@ -258,8 +256,7 @@ func TestExecuteWithWhereStatement(t *testing.T) {
 	}
 
 	builder := New("sqlite", dba)
-	context := context.Background()
-	err = builder.Select("*").Table("users").Where("id", "=", 1).Limit(1).Get(user, context)
+	err = builder.Select("*").Table("users").Where("id", "=", 1).Limit(1).Get(user)
 
 	if err != nil {
 		arguments := builder.GetArguments()
@@ -289,7 +286,6 @@ func TestExecuteSubQuery(t *testing.T) {
 	}
 
 	builder := New("sqlite", dba)
-	context := context.Background()
 	builder = builder.
 		Select("*").
 		Table("users").
@@ -298,7 +294,7 @@ func TestExecuteSubQuery(t *testing.T) {
 		}).
 		Limit(1)
 
-	err = builder.Get(user, context)
+	err = builder.Get(user)
 
 	if err != nil {
 		arguments := builder.GetArguments()
@@ -327,7 +323,6 @@ func TestExecuteInsert(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	context := context.Background()
 	builder := New("sqlite", dba)
 
 	res, err := builder.Table("users").Insert([]map[string]any{
@@ -336,7 +331,7 @@ func TestExecuteInsert(t *testing.T) {
 			"email":    "alice@example.com",
 			"age":      29,
 		},
-	}).Exec(context)
+	}).Exec()
 
 	if err != nil {
 		t.Fatal(err)
