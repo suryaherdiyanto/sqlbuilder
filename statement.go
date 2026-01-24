@@ -2,7 +2,7 @@ package sqlbuilder
 
 import (
 	"fmt"
-	"reflect"
+	"slices"
 	"strings"
 )
 
@@ -193,35 +193,45 @@ func (s *SelectStatement) GetArguments() []any {
 }
 
 func (si *InsertStatement) Parse() string {
-	fields := ""
+	columns := ""
 	values := ""
 
 	if len(si.Rows) > 0 {
-		vType := reflect.ValueOf(si.Rows)
-		columns := vType.Index(0).MapKeys()
+		keys := make([]string, 0, len(si.Rows[0]))
 
-		for _, k := range columns {
-			fields += fmt.Sprintf("`%s`,", k)
+		for k := range si.Rows[0] {
+			keys = append(keys, k)
+		}
+		slices.Sort(keys)
+
+		for _, k := range keys {
+			columns += fmt.Sprintf("`%s`,", k)
 			values += "?,"
 		}
 	}
 
-	fields = strings.TrimRight(fields, ",")
+	columns = strings.TrimRight(columns, ",")
 	values = strings.TrimRight(values, ",")
 
-	stmt := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", si.Table, fields, values)
+	stmt := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", si.Table, columns, values)
 
 	return stmt
 }
 
 func (su *UpdateStatement) Parse() string {
 	stmt := fmt.Sprintf("UPDATE %s SET ", su.Table)
-	vType := reflect.ValueOf(su.Rows)
-	columns := vType.MapKeys()
+	keys := make([]string, 0, len(su.Rows))
 
-	for _, k := range columns {
+	for k := range su.Rows {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+
+	for _, k := range keys {
 		stmt += fmt.Sprintf("`%s` = ?, ", k)
-		su.Values = append(su.Values, vType.MapIndex(k).Interface())
+		if val, ok := su.Rows[k]; ok {
+			su.Values = append(su.Values, val)
+		}
 	}
 
 	stmt = strings.TrimRight(stmt, ", ")
