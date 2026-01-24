@@ -100,6 +100,7 @@ func (s *SQLBuilder) Insert(data []map[string]any) *SQLBuilder {
 func (s *SQLBuilder) Update(data map[string]any) *SQLBuilder {
 	s.updateStatement = UpdateStatement{
 		Table: s.tempTable,
+		Rows:  data,
 	}
 
 	return s
@@ -116,44 +117,24 @@ func (s *SQLBuilder) Delete() *SQLBuilder {
 func (s *SQLBuilder) Table(table string) *SQLBuilder {
 	s.tempTable = table
 
-	if !reflect.DeepEqual(s.statement, SelectStatement{}) {
-		s.statement.Table = table
-		return s
-	}
-
-	if !reflect.DeepEqual(s.insertStatement, InsertStatement{}) {
-		s.insertStatement.Table = table
-		return s
-	}
-
-	if !reflect.DeepEqual(s.updateStatement, UpdateStatement{}) {
-		s.updateStatement.Table = table
-		return s
-	}
-
-	if !reflect.DeepEqual(s.deleteStatement, DeleteStatement{}) {
-		s.deleteStatement.Table = table
-		return s
-	}
-
 	return s
 }
 
 func (s *SQLBuilder) GetSql() (string, error) {
 
-	if !reflect.DeepEqual(s.statement, SelectStatement{}) {
+	if s.statement.Table != "" {
 		return s.statement.Parse(), nil
 	}
 
-	if !reflect.DeepEqual(s.insertStatement, InsertStatement{}) {
+	if s.insertStatement.Table != "" {
 		return s.insertStatement.Parse(), nil
 	}
 
-	if !reflect.DeepEqual(s.updateStatement, UpdateStatement{}) {
+	if s.updateStatement.Table != "" {
 		return s.updateStatement.Parse(), nil
 	}
 
-	if !reflect.DeepEqual(s.deleteStatement, DeleteStatement{}) {
+	if s.deleteStatement.Table != "" {
 		return s.deleteStatement.Parse(), nil
 	}
 
