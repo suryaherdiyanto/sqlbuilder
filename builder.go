@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"reflect"
+	"slices"
 )
 
 const (
@@ -168,8 +169,16 @@ func (s *SQLBuilder) GetArguments() []any {
 
 	if !reflect.DeepEqual(s.insertStatement, InsertStatement{}) {
 		for _, row := range s.insertStatement.Rows {
-			for _, val := range row {
-				values = append(values, val)
+			keys := make([]string, 0, len(row))
+			for k := range row {
+				keys = append(keys, k)
+			}
+			slices.Sort(keys)
+
+			for k := range keys {
+				if val, ok := row[keys[k]]; ok {
+					values = append(values, val)
+				}
 			}
 		}
 	}
