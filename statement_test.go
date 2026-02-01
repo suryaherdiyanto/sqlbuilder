@@ -348,6 +348,32 @@ func TestInsertStatement(t *testing.T) {
 	}
 }
 
+func TestInsertStatementMultiple(t *testing.T) {
+
+	statement := InsertStatement{
+		Table: "users",
+		Rows: []map[string]any{
+			{
+				"name":  "John Doe",
+				"email": "johndoe@example.com",
+				"age":   30,
+			},
+			{
+				"name":  "Foo barr",
+				"email": "foobarr@example.com",
+				"age":   21,
+			},
+		},
+	}
+
+	stmt := statement.Parse()
+	expected := "INSERT INTO users(`age`,`email`,`name`) VALUES(?,?,?),(?,?,?)"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
 func TestUpdateStatement(t *testing.T) {
 	statement := UpdateStatement{
 		Table: "users",

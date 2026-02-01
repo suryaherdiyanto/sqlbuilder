@@ -317,12 +317,10 @@ func TestExecuteInsert(t *testing.T) {
 
 	builder := New("sqlite", dba)
 
-	res, err := builder.Table("users").Insert([]map[string]any{
-		{
-			"username": "alice",
-			"email":    "alice@example.com",
-			"age":      29,
-		},
+	res, err := builder.Table("users").Insert(map[string]any{
+		"username": "alice",
+		"email":    "alice@example.com",
+		"age":      29,
 	}).Exec()
 
 	if err != nil {
@@ -339,6 +337,49 @@ func TestExecuteInsert(t *testing.T) {
 		t.Errorf("Expected rows affected to be greater than 0, but got: %d", rows)
 	}
 
+}
+
+func TestInsertMultipleRows(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = seed(dba)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	builder := New("sqlite", dba)
+
+	res, err := builder.Table("users").InsertMany([]map[string]any{
+		{
+			"username": "alice",
+			"email":    "alice@example.com",
+			"age":      29,
+		},
+		{
+			"username": "john doe",
+			"email":    "johndoe@example.com",
+			"age":      20,
+		},
+	}).Exec()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rows, err := res.RowsAffected()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if rows != 2 {
+		t.Errorf("Expected rows affected to be greater than 0, but got: %d", rows)
+	}
 }
 
 func TestExecuteUpdateStatement(t *testing.T) {
