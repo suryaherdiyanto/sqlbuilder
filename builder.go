@@ -88,15 +88,39 @@ func (b *SQLBuilder) Select(columns ...string) *SQLBuilder {
 	return b
 }
 
-func (s *SQLBuilder) Insert(data map[string]any) *SQLBuilder {
+func (s *SQLBuilder) Insert(data any) (int64, error) {
+	dataMap := map[string]any{}
+	dataType := reflect.TypeOf(data)
+
+	if dataType.Kind() == reflect.Struct {
+		err := toMap(data, &dataMap)
+
+		if err != nil {
+			return 0, err
+		}
+	} else {
+		dataMap = data.(map[string]any)
+	}
+
 	s.insertStatement = InsertStatement{
 		Table: s.tempTable,
 		Rows: []map[string]any{
-			data,
+			dataMap,
 		},
 	}
 
-	return s
+	res, err := s.Exec()
+	if err != nil {
+		return 0, err
+	}
+
+	lastInsertId, err := res.LastInsertId()
+
+	if err != nil {
+		return 0, nil
+	}
+
+	return lastInsertId, nil
 }
 
 func (s *SQLBuilder) InsertMany(data []map[string]any) *SQLBuilder {

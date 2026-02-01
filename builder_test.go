@@ -317,24 +317,54 @@ func TestExecuteInsert(t *testing.T) {
 
 	builder := New("sqlite", dba)
 
-	res, err := builder.Table("users").Insert(map[string]any{
+	id, err := builder.Table("users").Insert(map[string]any{
 		"username": "alice",
 		"email":    "alice@example.com",
 		"age":      29,
-	}).Exec()
+	})
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	rows, err := res.RowsAffected()
+	if id == 0 {
+		t.Error("Expected id not to be 0")
+	}
+
+}
+
+func TestExecuteInsertWithStructData(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
+	type UserData struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Age      uint64 `json:"age"`
+	}
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if rows <= 0 {
-		t.Errorf("Expected rows affected to be greater than 0, but got: %d", rows)
+	err = seed(dba)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	builder := New("sqlite", dba)
+	data := UserData{
+		Username: "foo",
+		Email:    "foobar@gmail.com",
+		Age:      23,
+	}
+	id, err := builder.Table("users").Insert(data)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if id == 0 {
+		t.Error("Expected id not to be 0")
 	}
 
 }
