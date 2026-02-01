@@ -88,7 +88,18 @@ func (b *SQLBuilder) Select(columns ...string) *SQLBuilder {
 	return b
 }
 
-func (s *SQLBuilder) Insert(data []map[string]any) *SQLBuilder {
+func (s *SQLBuilder) Insert(data map[string]any) *SQLBuilder {
+	s.insertStatement = InsertStatement{
+		Table: s.tempTable,
+		Rows: []map[string]any{
+			data,
+		},
+	}
+
+	return s
+}
+
+func (s *SQLBuilder) InsertMany(data []map[string]any) *SQLBuilder {
 	s.insertStatement = InsertStatement{
 		Table: s.tempTable,
 		Rows:  data,

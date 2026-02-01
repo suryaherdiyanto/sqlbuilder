@@ -219,7 +219,15 @@ func (si *InsertStatement) Parse() string {
 	columns = strings.TrimRight(columns, ",")
 	values = strings.TrimRight(values, ",")
 
-	stmt := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", si.Table, columns, values)
+	insertValues := ""
+	for i := range len(si.Rows) {
+		insertValues += fmt.Sprintf("(%s)", values)
+		if i < len(si.Rows)-1 {
+			insertValues += ","
+		}
+	}
+
+	stmt := fmt.Sprintf("INSERT INTO %s(%s) VALUES%s", si.Table, columns, insertValues)
 
 	return stmt
 }
