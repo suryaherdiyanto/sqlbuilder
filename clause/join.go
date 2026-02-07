@@ -2,8 +2,8 @@ package clause
 
 type JoinON struct {
 	Operator   Operator
-	LeftValue  any
-	RightValue any
+	LeftField  string
+	RightField string
 }
 
 type Join struct {
