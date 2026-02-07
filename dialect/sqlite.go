@@ -87,7 +87,7 @@ func (d *SQLiteDialect) ParseWhereNotIn(wi clause.WhereNotIn) string {
 }
 
 func (d *SQLiteDialect) ParseJoin(j clause.Join) string {
-	return fmt.Sprintf("%s %s ON %s.%v %s %s.%v", strings.ToUpper(string(j.Type)), j.SecondTable, j.FirstTable, j.On.LeftValue, j.On.Operator, j.SecondTable, j.On.RightValue)
+	return fmt.Sprintf("%s %s ON %s.%s %s %s.%s", strings.ToUpper(string(j.Type)), d.ColumnQuoteLeft+j.SecondTable+d.ColumnQuoteRight, d.ColumnQuoteLeft+j.FirstTable+d.ColumnQuoteRight, d.ColumnQuoteLeft+j.On.LeftField+d.ColumnQuoteRight, j.On.Operator, d.ColumnQuoteLeft+j.SecondTable+d.ColumnQuoteRight, d.ColumnQuoteLeft+j.On.RightField+d.ColumnQuoteRight)
 }
 
 func (d *SQLiteDialect) ParseGroup(g clause.GroupBy) string {
@@ -115,11 +115,11 @@ func (d *SQLiteDialect) ParseOrder(o clause.Order) string {
 }
 
 func (d *SQLiteDialect) ParseLimit(l clause.Limit) string {
-	return fmt.Sprintf("LIMIT ?", d.Delimiter)
+	return fmt.Sprintf("LIMIT %s", d.Delimiter)
 }
 
 func (d *SQLiteDialect) ParseOffset(o clause.Offset) string {
-	return fmt.Sprintf("OFFSET ?", d.Delimiter)
+	return fmt.Sprintf("OFFSET %s", d.Delimiter)
 }
 
 func NewSQLiteDialect() *SQLiteDialect {
