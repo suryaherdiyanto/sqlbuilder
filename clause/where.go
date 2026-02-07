@@ -12,3 +12,7 @@ type Where struct {
 	Conj   Conjuction
 	Groups []WhereGroup
 }
+
+func (w Where) Parse(dialect SQLDialector) string {
+	return dialect.ParseWhere(w)
+}

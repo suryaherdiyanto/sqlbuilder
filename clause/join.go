@@ -12,3 +12,7 @@ type Join struct {
 	SecondTable string
 	On          JoinON
 }
+
+func (j Join) Parse(dialect SQLDialector) string {
+	return dialect.ParseJoin(j)
+}

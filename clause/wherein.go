@@ -5,3 +5,7 @@ type WhereIn struct {
 	Values []any
 	Conj   Conjuction
 }
+
+func (w WhereIn) Parse(dialect SQLDialector) string {
+	return dialect.ParseWhereIn(w)
+}

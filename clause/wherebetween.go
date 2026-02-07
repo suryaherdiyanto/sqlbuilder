@@ -6,3 +6,7 @@ type WhereBetween struct {
 	End   any
 	Conj  Conjuction
 }
+
+func (w WhereBetween) Parse(dialect SQLDialector) string {
+	return dialect.ParseWhereBetween(w)
+}

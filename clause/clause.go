@@ -35,25 +35,14 @@ const (
 )
 
 type SQLDialector interface {
-	ParseWhere() string
-	ParseJoin() string
-	ParseWhereBetween() string
-	ParseWhereNotBetween() string
-	ParseWhereIn() string
-	ParseWhereNotIn() string
-	ParseOrder() string
-	ParseGroup() string
-	ParseLimit() string
-	ParseOffset() string
-
-	NewWhere(field string, op Operator, value any, conj Conjuction)
-	NewJoin(joinType JoinType, firstTable string, secondTable string, on JoinON)
-	NewOrder(orderFields []OrderField)
-	NewGroup(fields []string)
-	NewWhereBetween(field string, start, end any, conj Conjuction)
-	NewWhereNotBetween(field string, start, end any, conj Conjuction)
-	NewWhereIn(field string, values []any, conj Conjuction)
-	NewWhereNotIn(field string, values []any, conj Conjuction)
-	NewLimit(limit int)
-	NewOffset(offset int)
+	ParseWhere(w Where) string
+	ParseJoin(j Join) string
+	ParseWhereBetween(wb WhereBetween) string
+	ParseWhereNotBetween(wb WhereNotBetween) string
+	ParseWhereIn(wi WhereIn) string
+	ParseWhereNotIn(wi WhereNotIn) string
+	ParseOrder(o Order) string
+	ParseGroup(gb GroupBy) string
+	ParseLimit(l Limit) string
+	ParseOffset(o Offset) string
 }
