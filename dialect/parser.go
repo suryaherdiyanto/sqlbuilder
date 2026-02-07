@@ -27,14 +27,3 @@ type StatementParser interface {
 type OrderParser interface {
 	Parse() string
 }
-
-type SQLDialectParser interface {
-	ParseWheres() string
-	ParseJoins() string
-	ParseWhereBetweens() string
-	ParseWhereNotBetweens() string
-	ParseWhereIn() string
-	ParseWhereNotIn() string
-	ParseOrdering() string
-	ParseGroupings() string
-}
