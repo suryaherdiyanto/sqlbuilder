@@ -8,17 +8,22 @@ import (
 
 func TestWhereInParsing(t *testing.T) {
 	dialect := NewSQLiteDialect()
-	dialect.NewWhereIn("name", []any{"Alice", "Bob"}, clause.ConjuctionAnd)
+	where := clause.WhereIn{
+		Field:  "name",
+		Values: []any{"Alice", "Bob"},
+	}
 
-	stmt := dialect.ParseWhereIn()
+	stmt := where.Parse(dialect)
 	expected := "name IN(?,?)"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 
-	dialect = NewSQLiteDialect()
-	dialect.NewWhereIn("age", []any{19, 20, 31}, clause.ConjuctionAnd)
-	stmt = dialect.ParseWhereIn()
+	wherein2 := clause.WhereIn{
+		Field:  "age",
+		Values: []any{25, 30, 35},
+	}
+	stmt = wherein2.Parse(dialect)
 	expected = "age IN(?,?,?)"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -27,19 +32,17 @@ func TestWhereInParsing(t *testing.T) {
 
 func TestWhereParsing(t *testing.T) {
 	dialect := NewSQLiteDialect()
-	dialect.NewWhere("name", clause.OperatorEqual, "John Doe")
+	where := clause.Where{Field: "name", Op: clause.OperatorEqual, Value: "Alice"}
 
-	stmt := dialect.ParseWhere()
+	stmt := where.Parse(dialect)
 	expected := "name = ?"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 
-	dialect = NewSQLiteDialect()
-	dialect.NewWhere("age", clause.OperatorGreaterThan, 17)
-
-	stmt = dialect.ParseWhere()
+	where2 := clause.Where{Field: "age", Op: clause.OperatorGreaterThan, Value: 30}
+	stmt = where2.Parse(dialect)
 	expected = "age > ?"
 
 	if stmt != expected {
@@ -49,11 +52,13 @@ func TestWhereParsing(t *testing.T) {
 
 func TestOrderClause(t *testing.T) {
 	dialect := NewSQLiteDialect()
-	dialect.NewOrder([]clause.OrderField{
-		{Field: "name", Direction: clause.OrderDirectionDESC},
-	})
+	order := clause.Order{
+		OrderingFields: []clause.OrderField{
+			{Field: "name", Direction: clause.OrderDirectionDESC},
+		},
+	}
 
-	stmt := dialect.ParseOrder()
+	stmt := order.Parse(dialect)
 	expected := "ORDER BY name DESC"
 
 	if stmt != expected {
@@ -63,14 +68,19 @@ func TestOrderClause(t *testing.T) {
 
 func TestJoinClauseParsing(t *testing.T) {
 	dialect := NewSQLiteDialect()
-	dialect.NewJoin(clause.LeftJoin, "users", "orders", clause.JoinON{
-		LeftValue:  "id",
-		Operator:   clause.OperatorEqual,
-		RightValue: "user_id",
-	})
+	join := clause.Join{
+		Type:        clause.LeftJoin,
+		FirstTable:  "users",
+		SecondTable: "orders",
+		On: clause.JoinON{
+			Operator:   clause.OperatorEqual,
+			LeftField:  "id",
+			RightField: "user_id",
+		},
+	}
 
-	stmt := dialect.ParseJoin()
-	expected := "LEFT JOIN orders ON users.id = orders.user_id"
+	stmt := join.Parse(dialect)
+	expected := "LEFT JOIN `orders` ON `users`.`id` = `orders`.`user_id`"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
