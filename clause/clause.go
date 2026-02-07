@@ -45,4 +45,5 @@ type SQLDialector interface {
 	ParseGroup(gb GroupBy) string
 	ParseLimit(l Limit) string
 	ParseOffset(o Offset) string
+	ParseInsert(in Insert) string
 }
