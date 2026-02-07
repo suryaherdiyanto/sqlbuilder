@@ -16,6 +16,8 @@ type SQLiteDialect struct {
 	GroupBy         clause.GroupBy
 	OrderBy         clause.Order
 	Join            clause.Join
+	Limit           clause.Limit
+	Offset          clause.Offset
 }
 
 func (d *SQLiteDialect) ParseWhere() string {
@@ -86,6 +88,14 @@ func (d *SQLiteDialect) ParseOrder() string {
 	return stmt
 }
 
+func (d *SQLiteDialect) ParseLimit() string {
+	return fmt.Sprintf("LIMIT %d", d.Limit.Count)
+}
+
+func (d *SQLiteDialect) ParseOffset() string {
+	return fmt.Sprintf("OFFSET %d", d.Offset.Count)
+}
+
 func (d *SQLiteDialect) NewWhere(field string, op clause.Operator, value any) {
 	d.Where = clause.Where{
 		Field: field,
@@ -146,6 +156,18 @@ func (d *SQLiteDialect) NewOrder(orderFields []clause.OrderField) {
 func (d *SQLiteDialect) NewGroup(fields []string) {
 	d.GroupBy = clause.GroupBy{
 		Fields: fields,
+	}
+}
+
+func (d *SQLiteDialect) NewLimit(limit int) {
+	d.Limit = clause.Limit{
+		Count: limit,
+	}
+}
+
+func (d *SQLiteDialect) NewOffset(offset int) {
+	d.Offset = clause.Offset{
+		Count: offset,
 	}
 }
 

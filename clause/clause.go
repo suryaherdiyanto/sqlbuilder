@@ -43,6 +43,8 @@ type SQLDialector interface {
 	ParseWhereNotIn() string
 	ParseOrder() string
 	ParseGroup() string
+	ParseLimit() string
+	ParseOffset() string
 
 	NewWhere(field string, op Operator, value any, conj Conjuction)
 	NewJoin(joinType JoinType, firstTable string, secondTable string, on JoinON)
@@ -52,4 +54,6 @@ type SQLDialector interface {
 	NewWhereNotBetween(field string, start, end any, conj Conjuction)
 	NewWhereIn(field string, values []any, conj Conjuction)
 	NewWhereNotIn(field string, values []any, conj Conjuction)
+	NewLimit(limit int)
+	NewOffset(offset int)
 }
