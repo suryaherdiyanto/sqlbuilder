@@ -8,67 +8,60 @@ import (
 )
 
 type SQLiteDialect struct {
-	Where           clause.Where
-	WhereIn         clause.WhereIn
-	WhereNotIn      clause.WhereNotIn
-	WhereBetween    clause.WhereBetween
-	WhereNotBetween clause.WhereNotBetween
-	GroupBy         clause.GroupBy
-	OrderBy         clause.Order
-	Join            clause.Join
-	Limit           clause.Limit
-	Offset          clause.Offset
+	Delimiter        string
+	ColumnQuoteLeft  string
+	ColumnQuoteRight string
 }
 
-func (d *SQLiteDialect) ParseWhere() string {
-	return fmt.Sprintf("%s %s ?", d.Where.Field, d.Where.Op)
+func (d *SQLiteDialect) ParseWhere(w clause.Where) string {
+	return fmt.Sprintf("%s %s %s", w.Field, w.Op, d.Delimiter)
 }
 
-func (d *SQLiteDialect) ParseWhereBetween() string {
-	return fmt.Sprintf("%s BETWEEN ? AND ?", d.WhereBetween.Field)
+func (d *SQLiteDialect) ParseWhereBetween(wb clause.WhereBetween) string {
+	return fmt.Sprintf("%s BETWEEN %s AND %s", wb.Field, d.Delimiter, d.Delimiter)
 }
 
-func (d *SQLiteDialect) ParseWhereNotBetween() string {
-	return fmt.Sprintf("%s NOT BETWEEN ? AND ?", d.WhereNotBetween.Field)
+func (d *SQLiteDialect) ParseWhereNotBetween(wb clause.WhereNotBetween) string {
+	return fmt.Sprintf("%s NOT BETWEEN %s AND %s", wb.Field, d.Delimiter, d.Delimiter)
 }
 
-func (d *SQLiteDialect) ParseWhereIn() string {
+func (d *SQLiteDialect) ParseWhereIn(wi clause.WhereIn) string {
 	inValues := ""
 
-	for i := range d.WhereIn.Values {
-		inValues += "?"
+	for i := range wi.Values {
+		inValues += d.Delimiter
 
-		if i < len(d.WhereIn.Values)-1 {
+		if i < len(wi.Values)-1 {
 			inValues += ","
 		}
 	}
 
-	return fmt.Sprintf("%s IN(%s)", d.WhereIn.Field, inValues)
+	return fmt.Sprintf("%s IN(%s)", wi.Field, inValues)
 }
 
-func (d *SQLiteDialect) ParseWhereNotIn() string {
+func (d *SQLiteDialect) ParseWhereNotIn(wi clause.WhereNotIn) string {
 	inValues := ""
 
-	for i := range d.WhereNotIn.Values {
-		inValues += "?"
+	for i := range wi.Values {
+		inValues += d.Delimiter
 
-		if i < len(d.WhereNotIn.Values)-1 {
+		if i < len(wi.Values)-1 {
 			inValues += ","
 		}
 	}
 
-	return fmt.Sprintf("%s NOT IN(%s)", d.WhereNotIn.Field, inValues)
+	return fmt.Sprintf("%s NOT IN(%s)", wi.Field, inValues)
 }
 
-func (d *SQLiteDialect) ParseJoin() string {
-	return fmt.Sprintf("%s %s ON %s.%v %s %s.%v", strings.ToUpper(string(d.Join.Type)), d.Join.SecondTable, d.Join.FirstTable, d.Join.On.LeftValue, d.Join.On.Operator, d.Join.SecondTable, d.Join.On.RightValue)
+func (d *SQLiteDialect) ParseJoin(j clause.Join) string {
+	return fmt.Sprintf("%s %s ON %s.%v %s %s.%v", strings.ToUpper(string(j.Type)), j.SecondTable, j.FirstTable, j.On.LeftValue, j.On.Operator, j.SecondTable, j.On.RightValue)
 }
 
-func (d *SQLiteDialect) ParseGroup() string {
+func (d *SQLiteDialect) ParseGroup(g clause.GroupBy) string {
 	stmt := "GROUP BY "
-	for i, field := range d.GroupBy.Fields {
+	for i, field := range g.Fields {
 		stmt += field
-		if i < len(d.GroupBy.Fields)-1 {
+		if i < len(g.Fields)-1 {
 			stmt += ", "
 		}
 	}
@@ -76,11 +69,11 @@ func (d *SQLiteDialect) ParseGroup() string {
 	return stmt
 }
 
-func (d *SQLiteDialect) ParseOrder() string {
+func (d *SQLiteDialect) ParseOrder(o clause.Order) string {
 	stmt := "ORDER BY "
-	for i, orderField := range d.OrderBy.OrderingFields {
+	for i, orderField := range o.OrderingFields {
 		stmt += fmt.Sprintf("%s %s", orderField.Field, strings.ToUpper(string(orderField.Direction)))
-		if i < len(d.OrderBy.OrderingFields)-1 {
+		if i < len(o.OrderingFields)-1 {
 			stmt += ", "
 		}
 	}
@@ -88,89 +81,14 @@ func (d *SQLiteDialect) ParseOrder() string {
 	return stmt
 }
 
-func (d *SQLiteDialect) ParseLimit() string {
-	return fmt.Sprintf("LIMIT %d", d.Limit.Count)
+func (d *SQLiteDialect) ParseLimit(l clause.Limit) string {
+	return fmt.Sprintf("LIMIT ?", d.Delimiter)
 }
 
-func (d *SQLiteDialect) ParseOffset() string {
-	return fmt.Sprintf("OFFSET %d", d.Offset.Count)
-}
-
-func (d *SQLiteDialect) NewWhere(field string, op clause.Operator, value any) {
-	d.Where = clause.Where{
-		Field: field,
-		Op:    op,
-		Value: value,
-	}
-}
-
-func (d *SQLiteDialect) NewWhereIn(field string, values []any, conj clause.Conjuction) {
-	d.WhereIn = clause.WhereIn{
-		Field:  field,
-		Values: values,
-		Conj:   conj,
-	}
-}
-
-func (d *SQLiteDialect) NewWhereNotIn(field string, values []any, conj clause.Conjuction) {
-	d.WhereNotIn = clause.WhereNotIn{
-		Field:  field,
-		Values: values,
-		Conj:   conj,
-	}
-}
-
-func (d *SQLiteDialect) NewWhereBetween(field string, start, end any, conj clause.Conjuction) {
-	d.WhereBetween = clause.WhereBetween{
-		Field: field,
-		Start: start,
-		End:   end,
-		Conj:  conj,
-	}
-}
-
-func (d *SQLiteDialect) NewWhereNotBetween(field string, start, end any, conj clause.Conjuction) {
-	d.WhereNotBetween = clause.WhereNotBetween{
-		Field: field,
-		Start: start,
-		End:   end,
-		Conj:  conj,
-	}
-}
-
-func (d *SQLiteDialect) NewJoin(joinType clause.JoinType, firstTable, secondTable string, on clause.JoinON) {
-	d.Join = clause.Join{
-		Type:        joinType,
-		FirstTable:  firstTable,
-		SecondTable: secondTable,
-		On:          on,
-	}
-}
-
-func (d *SQLiteDialect) NewOrder(orderFields []clause.OrderField) {
-	d.OrderBy = clause.Order{
-		OrderingFields: orderFields,
-	}
-}
-
-func (d *SQLiteDialect) NewGroup(fields []string) {
-	d.GroupBy = clause.GroupBy{
-		Fields: fields,
-	}
-}
-
-func (d *SQLiteDialect) NewLimit(limit int) {
-	d.Limit = clause.Limit{
-		Count: limit,
-	}
-}
-
-func (d *SQLiteDialect) NewOffset(offset int) {
-	d.Offset = clause.Offset{
-		Count: offset,
-	}
+func (d *SQLiteDialect) ParseOffset(o clause.Offset) string {
+	return fmt.Sprintf("OFFSET ?", d.Delimiter)
 }
 
 func NewSQLiteDialect() *SQLiteDialect {
-	return &SQLiteDialect{}
+	return &SQLiteDialect{Delimiter: "?", ColumnQuoteLeft: "`", ColumnQuoteRight: "`"}
 }
