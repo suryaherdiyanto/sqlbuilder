@@ -114,12 +114,126 @@ func (d *SQLiteDialect) ParseOrder(o clause.Order) string {
 	return stmt
 }
 
+func (d *SQLiteDialect) ParseJoins(j []clause.Join) string {
+	stmt := ""
+	for _, v := range j {
+		stmt += fmt.Sprintf(" %s", d.ParseJoin(v))
+	}
+
+	return stmt
+}
+
+func (d *SQLiteDialect) ParseSelect(s clause.Select) string {
+	stmt := `SELECT %s FROM %s`
+
+	fields := strings.Join(s.Columns, ",")
+
+	stmt += d.ParseJoins(s.Joins)
+
+	stmt += " WHERE "
+
+	stmt += d.ParseWhereStatements(s.WhereStatements)
+
+	stmt += d.ParseWhereInStatements(s.WhereStatements)
+
+	stmt += d.ParseWhereNotInStatements(s.WhereStatements)
+
+	stmt += d.ParseWhereBetweenStatements(s.WhereStatements)
+
+	stmt += d.ParseWhereNotBetweenStatements(s.WhereStatements)
+
+	stmt += d.ParseGroup(s.GroupBy)
+
+	stmt += d.ParseOrder(s.Order)
+
+	stmt += d.ParseLimit(s.Limit)
+
+	stmt += d.ParseOffset(s.Offset)
+
+	return fmt.Sprintf(stmt, fields, s.Table)
+}
+
 func (d *SQLiteDialect) ParseLimit(l clause.Limit) string {
+	if l.Count == 0 {
+		return ""
+	}
+
 	return fmt.Sprintf("LIMIT %s", d.Delimiter)
 }
 
 func (d *SQLiteDialect) ParseOffset(o clause.Offset) string {
+	if o.Count == 0 {
+		return ""
+	}
+
 	return fmt.Sprintf("OFFSET %s", d.Delimiter)
+}
+
+func (d *SQLiteDialect) ParseWhereStatements(ws clause.WhereStatements) string {
+	stmt := ""
+	for i, v := range ws.Where {
+		if i >= 1 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+
+		stmt += d.ParseWhere(v)
+		if v.Value != nil {
+			ws.Values = append(ws.Values, v.Value)
+		}
+	}
+	return stmt
+}
+
+func (d *SQLiteDialect) ParseWhereInStatements(ws clause.WhereStatements) string {
+	stmt := ""
+	for i, v := range ws.WhereIn {
+		if i >= 1 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+
+		stmt += d.ParseWhereIn(v)
+		ws.Values = append(ws.Values, v.Values...)
+	}
+	return stmt
+}
+
+func (d *SQLiteDialect) ParseWhereNotInStatements(ws clause.WhereStatements) string {
+	stmt := ""
+	for i, v := range ws.WhereNotIn {
+		if i >= 1 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+
+		stmt += d.ParseWhereNotIn(v)
+		ws.Values = append(ws.Values, v.Values...)
+	}
+	return stmt
+}
+
+func (d *SQLiteDialect) ParseWhereBetweenStatements(ws clause.WhereStatements) string {
+	stmt := ""
+	for i, v := range ws.WhereBetween {
+		if i >= 1 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+
+		stmt += d.ParseWhereBetween(v)
+		ws.Values = append(ws.Values, v.Start, v.End)
+	}
+	return stmt
+}
+
+func (d *SQLiteDialect) ParseWhereNotBetweenStatements(ws clause.WhereStatements) string {
+	stmt := ""
+	for i, v := range ws.WhereNotBetween {
+		if i >= 1 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+
+		stmt += d.ParseWhereNotBetween(v)
+		ws.Values = append(ws.Values, v.Start, v.End)
+	}
+	return stmt
 }
 
 func NewSQLiteDialect() *SQLiteDialect {
