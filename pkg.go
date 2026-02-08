@@ -1,6 +1,8 @@
 package sqlbuilder
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 func toMap(data, dst any) error {
 	jsonBytes, err := json.Marshal(data)
