@@ -46,11 +46,13 @@ type SQLDialector interface {
 	ParseLimit(l Limit) string
 	ParseOffset(o Offset) string
 	ParseInsert(in Insert) string
-	ParseWhereStatements(ws WhereStatements) string
-	ParseWhereInStatements(ws WhereStatements) string
-	ParseWhereNotInStatements(ws WhereStatements) string
-	ParseWhereBetweenStatements(ws WhereStatements) string
-	ParseWhereNotBetweenStatements(ws WhereStatements) string
-	ParseSelect(s Select) string
+	ParseWhereStatements(ws *WhereStatements) string
+	ParseWhereInStatements(ws *WhereStatements) string
+	ParseWhereNotInStatements(ws *WhereStatements) string
+	ParseWhereBetweenStatements(ws *WhereStatements) string
+	ParseWhereNotBetweenStatements(ws *WhereStatements) string
+	ParseSelect(s Select) (string, Select)
 	ParseJoins(j []Join) string
+	ParseUpdate(u Update) string
+	ParseDelete(d Delete) string
 }
