@@ -6,11 +6,12 @@ type WhereGroup struct {
 }
 
 type Where struct {
-	Field  string
-	Op     Operator
-	Value  any
-	Conj   Conjuction
-	Groups []WhereGroup
+	Field        string
+	Op           Operator
+	Value        any
+	Conj         Conjuction
+	Groups       []WhereGroup
+	SubStatement Select
 }
 
 type WhereStatements struct {
@@ -27,5 +28,5 @@ func (w Where) Parse(dialect SQLDialector) string {
 }
 
 func (w WhereStatements) Parse(dialect SQLDialector) string {
-	return dialect.ParseWhereStatements(w)
+	return dialect.ParseWhereStatements(&w)
 }
