@@ -1,7 +1,7 @@
 package clause
 
 type Limit struct {
-	Count int
+	Count int64
 }
 
 func (l Limit) Parse(dialect SQLDialector) string {

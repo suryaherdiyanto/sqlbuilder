@@ -1,7 +1,7 @@
 package clause
 
 type Offset struct {
-	Count int
+	Count int64
 }
 
 func (o Offset) Parse(dialect SQLDialector) string {

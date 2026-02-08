@@ -53,6 +53,6 @@ type SQLDialector interface {
 	ParseWhereNotBetweenStatements(ws *WhereStatements) string
 	ParseSelect(s Select) (string, Select)
 	ParseJoins(j []Join) string
-	ParseUpdate(u Update) string
-	ParseDelete(d Delete) string
+	ParseUpdate(u Update) (string, Update)
+	ParseDelete(d Delete) (string, Delete)
 }
