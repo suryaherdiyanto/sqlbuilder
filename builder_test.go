@@ -500,127 +500,147 @@ func TestExecuteDeleteStatement(t *testing.T) {
 	}
 }
 
-// func TestExecuteTransaction(t *testing.T) {
-// 	teardownSuite := setupSuite(t)
-// 	defer teardownSuite(t)
+func TestExecuteTransaction(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	builder = New("sqlite", db)
-// 	err := builder.Begin(func(b *SQLBuilder) error {
-// 		type UserRequest struct {
-// 			Username string `db:"username"`
-// 			Age      int    `db:"age"`
-// 			Email    string `db:"email"`
-// 		}
-// 		user := &UserRequest{
-// 			Username: "johncena",
-// 			Email:    "johncena@example.com",
-// 			Age:      35,
-// 		}
-// 		result, err := b.Table("users").Insert(user)
+	err = seed(dba)
 
-// 		if err != nil {
-// 			return err
-// 		}
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 		newUser := &User{}
-// 		id, err := result.LastInsertId()
-// 		if err != nil {
-// 			return err
-// 		}
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, dba)
+	err = builder.Begin(func(b *SQLBuilder) error {
+		type UserRequest struct {
+			Username string `json:"username"`
+			Age      int    `json:"age"`
+			Email    string `json:"email"`
+		}
+		user := UserRequest{
+			Username: "johncena",
+			Email:    "johncena@example.com",
+			Age:      35,
+		}
+		lastInsertId, err := b.Table("users").Insert(user)
 
-// 		if err = b.Select("*").Table("users").Where("id = ?", id).Find(newUser, context.Background()); err != nil {
-// 			return err
-// 		}
+		if err != nil {
+			return err
+		}
 
-// 		type UpdateRequest struct {
-// 			Age int `db:"age"`
-// 		}
-// 		update := &UpdateRequest{Age: 40}
-// 		if _, err = b.Table("users").Where("id = ?", id).Update(update); err != nil {
-// 			return err
-// 		}
+		newUser := &User{}
 
-// 		return nil
-// 	})
+		if err = b.Select("*").Table("users").Where("id", clause.OperatorEqual, lastInsertId).Get(&newUser); err != nil {
+			return err
+		}
 
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// }
+		type UpdateRequest struct {
+			Age int `db:"age"`
+		}
+		update := UpdateRequest{Age: 40}
+		updateMap := map[string]any{}
+		toMap(update, updateMap)
 
-// func TestExecute(t *testing.T) {
-// 	teardownSuite := setupSuite(t)
-// 	defer teardownSuite(t)
+		if _, err = b.Table("users").Where("id", clause.OperatorEqual, lastInsertId).Update(updateMap).Exec(); err != nil {
+			return err
+		}
 
-// 	user := new(User)
-// 	builder = New("sqlite", db)
-// 	err := builder.Select("*").Table("users").Find(user, context.Background())
+		return nil
+	})
 
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
+	if err != nil {
+		t.Error(err)
+	}
+}
 
-// 	if user.Email != "johndoe@example.com" {
-// 		t.Errorf("Expected johndoe@example.com, but got: %s", user.Email)
-// 	}
+func TestExecute(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
 
-// }
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	expected := "INSERT INTO users(username,email,age) VALUES(?,?,?)"
+	err = seed(dba)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	if sql, _ := builder.GetSql(); sql != expected {
-// 		t.Errorf("Unexpected SQL result, got: %s", sql)
-// 	}
+	user := new(User)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, dba)
+	err = builder.Table("users").Select("*").Get(user)
 
-// 	if id, err := result.LastInsertId(); err != nil {
-// 		t.Error(err)
+	if err != nil {
+		sql, _ := builder.GetSql()
+		t.Errorf("Failed to execute select statement: %s", sql)
+		t.Error(err)
+	}
 
-// 		if id <= 0 {
-// 			t.Errorf("Expected last insert id to be greater than 0, but got: %d", id)
-// 		}
-// 	}
+	if user.Email != "johndoe@example.com" {
+		t.Errorf("Expected johndoe@example.com, but got: %s", user.Email)
+	}
 
-// }
+}
 
-// func TestExecuteWhere(t *testing.T) {
-// 	teardownSuite := setupSuite(t)
-// 	defer teardownSuite(t)
+func TestExecuteWhere(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
 
-// 	user := new(User)
-// 	builder = New("sqlite", db)
-// 	builder.Select()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	err := builder.Select("*").Table("users").Where("email = ?", "daniel@example.com").Limit(1).Find(user, context.Background())
+	err = seed(dba)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
+	user := new(User)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, dba)
 
-// 	if user.Email != "daniel@example.com" {
-// 		t.Errorf("Expected daniel@example.com, but got: %s", user.Email)
-// 	}
-// }
+	err = builder.Table("users").Select("*").Where("email", clause.OperatorEqual, "daniel@example.com").Limit(1).Get(user)
 
-// func TestWhereAnd(t *testing.T) {
-// 	teardownSuite := setupSuite(t)
-// 	defer teardownSuite(t)
+	if err != nil {
+		t.Error(err)
+	}
 
-// 	var users []User
-// 	builder = New("sqlite", db)
-// 	builder.Select()
+	if user.Email != "daniel@example.com" {
+		t.Errorf("Expected daniel@example.com, but got: %s", user.Email)
+	}
+}
 
-// 	err := builder.
-// 		Select("*").
-// 		Table("users").
-// 		Where("age < ? AND email like ?", 30, "%@example.com").
-// 		Get(&users, context.Background())
+func TestWhereAnd(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
+	err = seed(dba)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	if len(users) != 3 {
-// 		t.Errorf("Expected return %d of users, but got %d", 3, len(users))
-// 	}
+	var users []User
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, dba)
+	builder.Select()
 
-// }
+	err = builder.
+		Table("users").
+		Select("*").
+		Where("age", clause.OperatorLessThan, 30).
+		Where("email", clause.OperatorLike, "%@example.com").
+		Get(&users)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(users) != 3 {
+		t.Errorf("Expected return %d of users, but got %d", 3, len(users))
+	}
+
+}

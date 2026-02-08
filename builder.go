@@ -65,8 +65,9 @@ func (s *SQLBuilder) Begin(tx func(s *SQLBuilder) error) error {
 	}
 
 	builder := &SQLBuilder{
-		tx:   transaction,
-		isTx: true,
+		tx:      transaction,
+		isTx:    true,
+		Dialect: s.Dialect,
 	}
 
 	err = tx(builder)
@@ -178,8 +179,8 @@ func (s *SQLBuilder) GetSql() (string, error) {
 		stmt += s.Dialect.ParseOffset(s.Offseting)
 		stmt += s.Dialect.ParseOrder(s.Ordering)
 
-		s.Values = append(s.statement.Values, statementObj.Values...)
-		s.Values = append(s.statement.Values, s.WhereStatements.Values...)
+		s.Values = append(s.Values, statementObj.Values...)
+		s.Values = append(s.Values, s.WhereStatements.Values...)
 		return stmt, nil
 	}
 
@@ -485,7 +486,7 @@ func (s *SQLBuilder) Exec() (sql.Result, error) {
 	}
 
 	if s.isTx {
-		// return s.tx.ExecContext(ctx, statement, s.statement.arguments...)
+		return s.tx.Exec(statement, arguments...)
 	}
 
 	return s.sql.Exec(statement, arguments...)
@@ -498,7 +499,7 @@ func (s *SQLBuilder) ExecContext(ctx context.Context) (sql.Result, error) {
 	}
 
 	if s.isTx {
-		// return s.tx.ExecContext(ctx, statement, s.statement.arguments...)
+		return s.tx.ExecContext(ctx, statement, arguments...)
 	}
 
 	return s.sql.ExecContext(ctx, statement, arguments...)
@@ -511,7 +512,7 @@ func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
 	}
 
 	if s.isTx {
-		// return s.tx.QueryContext(ctx, sql, s.statement.arguments...)
+		return s.tx.QueryContext(ctx, sql, arguments...)
 	}
 
 	return s.sql.QueryContext(ctx, sql, arguments...)
