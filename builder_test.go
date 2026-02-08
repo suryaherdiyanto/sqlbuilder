@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/suryaherdiyanto/sqlbuilder/clause"
+	"github.com/suryaherdiyanto/sqlbuilder/dialect"
 )
 
 var db *sql.DB
@@ -47,65 +49,70 @@ func seed(db *sql.DB) error {
 }
 
 func TestBuilder(t *testing.T) {
-	builder = New("sqlite", db)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users" {
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users`" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 
-	builder = New("sqlite", db)
+	builder = New(dialect, db)
 	builder.Table("users").Select("id", "username", "email")
 
-	if sql, _ := builder.GetSql(); sql != "SELECT id,username,email FROM users" {
+	if sql, _ := builder.GetSql(); sql != "SELECT `id`,`username`,`email` FROM `users`" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 
 }
 
 func TestWithWhere(t *testing.T) {
-	builder = New("sqlite", db)
-	builder.Table("users").Select("*").Where("email", OperatorEqual, "johndoe@gmail.com")
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, db)
+	builder.Table("users").Select("*").Where("email", clause.OperatorEqual, "johndoe@gmail.com")
 
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email = ?" {
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `email` = ?" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
 func TestWithMultipleWhere(t *testing.T) {
-	builder = New("sqlite", db)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
 	builder.
 		Where("email", "=", "johndoe@gmail.com").
 		Where("access_role", "<", 3)
 
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email = ? AND access_role < ?" {
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `email` = ? AND `access_role` < ?" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
 func TestWhereIn(t *testing.T) {
-	builder = New("sqlite", db)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, db)
 	builder.Table("users")
 
 	builder.Select("*").
 		WhereIn("email", []any{"johndoe@example.com", "amal@example.com"})
 
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email IN(?,?)" {
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `email` IN(?,?)" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
 func TestWhereBetween(t *testing.T) {
-	builder = New("sqlite", db)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, db)
 	builder.Table("users")
 
 	builder.
 		Select("*").
 		WhereBetween("age", 5, 10)
 
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE age BETWEEN ? AND ?" {
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `age` BETWEEN ? AND ?" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 
@@ -114,62 +121,65 @@ func TestWhereBetween(t *testing.T) {
 		Select("*").
 		WhereBetween("dob", "1995-02-01", "2000-01-01")
 
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE dob BETWEEN ? AND ?" {
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `dob` BETWEEN ? AND ?" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
 func TestWhereOr(t *testing.T) {
-	builder = New("sqlite", db)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
 	builder.
-		Where("age", OperatorGreatherThanEqual, 18).
-		WhereOr("email", OperatorEqual, "johndoe@example.com")
+		Where("age", clause.OperatorGreatherThanEqual, 18).
+		WhereOr("email", clause.OperatorEqual, "johndoe@example.com")
 
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE age >= ? OR email = ?" {
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `age` >= ? OR `email` = ?" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
 func TestJoin(t *testing.T) {
-	builder = New("sqlite", db)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
 	builder.
 		Join("roles", "id", "=", "user_id")
 
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users INNER JOIN roles ON users.id = roles.user_id" {
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` INNER JOIN `roles` ON `users`.`id` = `roles`.`user_id`" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
 func TestLeftJoin(t *testing.T) {
-	builder = New("sqlite", db)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
 	builder.
-		LeftJoin("roles", "id", OperatorEqual, "user_id")
-
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users LEFT JOIN roles ON users.id = roles.user_id" {
+		LeftJoin("roles", "id", clause.OperatorEqual, "user_id")
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` LEFT JOIN `roles` ON `users`.`id` = `roles`.`user_id`" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
 func TestRightJoin(t *testing.T) {
-	builder = New("sqlite", db)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
 	builder.
-		RightJoin("roles", "id", "=", "user_id")
-
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users RIGHT JOIN roles ON users.id = roles.user_id" {
+		RightJoin("roles", "id", clause.OperatorEqual, "user_id")
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` RIGHT JOIN `roles` ON `users`.`id` = `roles`.`user_id`" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
 func TestWhereExists(t *testing.T) {
-	builder = New("sqlite", db)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
 	builder.
@@ -177,13 +187,14 @@ func TestWhereExists(t *testing.T) {
 			return b.Table("roles").Select("*").Where("users.id", "=", "roles.user_id")
 		})
 
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE EXISTS (SELECT * FROM roles WHERE users.id = ?)" {
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` WHERE EXISTS (SELECT * FROM `roles` WHERE `users`.`id` = ?)" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
 func TestWhereFuncSubquery(t *testing.T) {
-	builder = New("sqlite", db)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
 	builder.
@@ -191,19 +202,20 @@ func TestWhereFuncSubquery(t *testing.T) {
 			return b.Table("roles").Select("user_id").Where("users.id", "=", "roles.user_id")
 		})
 
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users WHERE email = (SELECT user_id FROM roles WHERE users.id = ?)" {
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `email` = (SELECT `user_id` FROM `roles` WHERE `users`.`id` = ?)" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
 
 func TestGroupBy(t *testing.T) {
-	builder = New("sqlite", db)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
 	builder.
 		GroupBy("age", "role")
 
-	if sql, _ := builder.GetSql(); sql != "SELECT * FROM users GROUP BY age,role" {
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` GROUP BY `age`,`role`" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
@@ -221,7 +233,8 @@ func TestExecuteSelectStatement(t *testing.T) {
 	}
 
 	var users []User
-	builder := New("sqlite", dba)
+	dialect := dialect.NewSQLiteDialect()
+	builder := New(dialect, dba)
 	err = builder.Table("users").Select("*").Get(&users)
 
 	if err != nil {
@@ -247,7 +260,8 @@ func TestExecuteWithWhereStatement(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	builder := New("sqlite", dba)
+	dialect := dialect.NewSQLiteDialect()
+	builder := New(dialect, dba)
 	err = builder.Table("users").Select("*").Where("id", "=", 1).Limit(1).Get(user)
 
 	if err != nil {
@@ -277,12 +291,13 @@ func TestExecuteSubQuery(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	builder := New("sqlite", dba)
+	dialect := dialect.NewSQLiteDialect()
+	builder := New(dialect, dba)
 	builder = builder.
 		Table("users").
 		Select("*").
 		WhereFunc("age", "=", func(b Builder) *SQLBuilder {
-			return b.Table("users").Select("MIN(age)")
+			return b.Table("users").Select("MIN(age) as min")
 		}).
 		Limit(1)
 
@@ -315,7 +330,8 @@ func TestExecuteInsert(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	builder := New("sqlite", dba)
+	dialect := dialect.NewSQLiteDialect()
+	builder := New(dialect, dba)
 
 	id, err := builder.Table("users").Insert(map[string]any{
 		"username": "alice",
@@ -351,7 +367,8 @@ func TestExecuteInsertWithStructData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	builder := New("sqlite", dba)
+	dialect := dialect.NewSQLiteDialect()
+	builder := New(dialect, dba)
 	data := UserData{
 		Username: "foo",
 		Email:    "foobar@gmail.com",
@@ -382,7 +399,8 @@ func TestInsertMultipleRows(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	builder := New("sqlite", dba)
+	dialect := dialect.NewSQLiteDialect()
+	builder := New(dialect, dba)
 
 	res, err := builder.Table("users").InsertMany([]map[string]any{
 		{
@@ -421,12 +439,14 @@ func TestExecuteUpdateStatement(t *testing.T) {
 
 	err = seed(dba)
 
-	builder = New("sqlite", dba)
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, dba)
 
-	result, err := builder.Table("users").Where("id", OperatorEqual, 1).Update(map[string]any{
+	builder = builder.Table("users").Where("id", clause.OperatorEqual, 1).Update(map[string]any{
 		"username": "john_doe_updated",
 		"age":      36,
-	}).Exec()
+	})
+	result, err := builder.Exec()
 
 	if sql, err := builder.GetSql(); err != nil {
 		t.Fatal(err)
@@ -458,8 +478,9 @@ func TestExecuteDeleteStatement(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	builder = New("sqlite", dba)
-	result, err := builder.Table("users").Where("username", OperatorEqual, "johndoe").Delete().Exec()
+	dialect := dialect.NewSQLiteDialect()
+	builder = New(dialect, dba)
+	result, err := builder.Table("users").Where("username", clause.OperatorEqual, "johndoe").Delete().Exec()
 
 	if err != nil {
 		t.Fatal(err)
