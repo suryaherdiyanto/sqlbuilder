@@ -90,27 +90,28 @@ func TestJoinClauseParsing(t *testing.T) {
 func TestStatementMultipleWhere(t *testing.T) {
 	dialect := NewSQLiteDialect()
 	statement := clause.Select{
+		Columns: []string{"*"},
 		Table:   "users",
-		Columns: []string{"id", "email", "name"},
-		WhereStatements: clause.WhereStatements{
-			Where: []clause.Where{
-				{
-					Field: "email",
-					Value: "johndoe@gmail.com",
-					Op:    clause.OperatorEqual,
-				},
-				{
-					Field: "access_role",
-					Value: 3,
-					Op:    clause.OperatorLessThan,
-					Conj:  clause.ConjuctionAnd,
-				},
+	}
+	where := clause.WhereStatements{
+		Where: []clause.Where{
+			{
+				Field: "email",
+				Value: "johndoe@gmail.com",
+				Op:    clause.OperatorEqual,
+			},
+			{
+				Field: "access_role",
+				Value: 3,
+				Op:    clause.OperatorLessThan,
+				Conj:  clause.ConjuctionAnd,
 			},
 		},
 	}
 
 	stmt, _ := statement.Parse(dialect)
-	expected := "SELECT `id`,`email`,`name` FROM `users` WHERE `email` = ? AND `access_role` < ?"
+	stmt += where.Parse(dialect)
+	expected := "SELECT * FROM `users` WHERE `email` = ? AND `access_role` < ?"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
@@ -119,27 +120,28 @@ func TestStatementMultipleWhere(t *testing.T) {
 func TestStatementWhereConjuctionOr(t *testing.T) {
 	dialect := NewSQLiteDialect()
 	statement := clause.Select{
+		Columns: []string{"*"},
 		Table:   "users",
-		Columns: []string{"id", "email", "name"},
-		WhereStatements: clause.WhereStatements{
-			Where: []clause.Where{
-				{
-					Field: "email",
-					Value: "johndoe@gmail.com",
-					Op:    clause.OperatorEqual,
-				},
-				{
-					Field: "role",
-					Value: "admin",
-					Op:    clause.OperatorLessThan,
-					Conj:  clause.ConjuctionOr,
-				},
+	}
+	where := clause.WhereStatements{
+		Where: []clause.Where{
+			{
+				Field: "email",
+				Value: "johndoe@gmail.com",
+				Op:    clause.OperatorEqual,
+			},
+			{
+				Field: "role",
+				Value: "admin",
+				Op:    clause.OperatorLessThan,
+				Conj:  clause.ConjuctionOr,
 			},
 		},
 	}
 
 	stmt, _ := statement.Parse(dialect)
-	expected := "SELECT `id`,`email`,`name` FROM `users` WHERE `email` = ? OR `role` < ?"
+	stmt += where.Parse(dialect)
+	expected := "SELECT * FROM `users` WHERE `email` = ? OR `role` < ?"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
@@ -148,31 +150,25 @@ func TestStatementWhereConjuctionOr(t *testing.T) {
 func TestSimpleSelectStatement(t *testing.T) {
 	dialect := NewSQLiteDialect()
 	statement := clause.Select{
+		Columns: []string{"*"},
 		Table:   "users",
-		Columns: []string{"id", "email", "name"},
-		WhereStatements: clause.WhereStatements{
-			Where: []clause.Where{
-				{
-					Field: "email",
-					Value: "johndoe@gmail.com",
-					Op:    clause.OperatorEqual,
-				},
+	}
+	where := clause.WhereStatements{
+		Where: []clause.Where{
+			{
+				Field: "email",
+				Value: "johndoe@gmail.com",
+				Op:    clause.OperatorEqual,
 			},
 		},
 	}
 
-	stmt, s := statement.Parse(dialect)
-	expected := "SELECT `id`,`email`,`name` FROM `users` WHERE `email` = ?"
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+	expected := "SELECT * FROM `users` WHERE `email` = ?"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
-
-	arguments := s.GetArguments()
-
-	if len(arguments) != 1 {
-		t.Errorf("Expected 1 argument, but got: %d", len(arguments))
-	}
-
 }
 
 func TestSimpleStatementWithLimitAndOffset(t *testing.T) {
@@ -180,11 +176,13 @@ func TestSimpleStatementWithLimitAndOffset(t *testing.T) {
 	statement := clause.Select{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		Limit:   clause.Limit{Count: 10},
-		Offset:  clause.Offset{Count: 5},
 	}
+	limit := clause.Limit{Count: 10}
+	offset := clause.Offset{Count: 5}
 
 	stmt, _ := statement.Parse(dialect)
+	stmt += limit.Parse(dialect)
+	stmt += offset.Parse(dialect)
 	expected := "SELECT `id`,`email`,`name` FROM `users` LIMIT ? OFFSET ?"
 
 	if stmt != expected {
@@ -197,17 +195,18 @@ func TestStatementWhereIn(t *testing.T) {
 	statement := clause.Select{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		WhereStatements: clause.WhereStatements{
-			WhereIn: []clause.WhereIn{
-				{
-					Field:  "email",
-					Values: []any{"johndoe@gmail.com", "test@example.com"},
-				},
+	}
+	where := clause.WhereStatements{
+		WhereIn: []clause.WhereIn{
+			{
+				Field:  "email",
+				Values: []any{"johndoe@gmail.com", "test@example.com"},
 			},
 		},
 	}
 
 	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
 	expected := "SELECT `id`,`email`,`name` FROM `users` WHERE `email` IN(?,?)"
 
 	if stmt != expected {
@@ -220,25 +219,26 @@ func TestStatementWhereInWithConjuction(t *testing.T) {
 	statement := clause.Select{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		WhereStatements: clause.WhereStatements{
-			Where: []clause.Where{
-				{
-					Field: "name",
-					Op:    clause.OperatorEqual,
-					Value: "John",
-				},
+	}
+	where := clause.WhereStatements{
+		Where: []clause.Where{
+			{
+				Field: "name",
+				Op:    clause.OperatorEqual,
+				Value: "John",
 			},
-			WhereIn: []clause.WhereIn{
-				{
-					Field:  "email",
-					Values: []any{"johndoe@gmail.com", "test@example.com"},
-					Conj:   clause.ConjuctionAnd,
-				},
+		},
+		WhereIn: []clause.WhereIn{
+			{
+				Field:  "email",
+				Values: []any{"johndoe@gmail.com", "test@example.com"},
+				Conj:   clause.ConjuctionAnd,
 			},
 		},
 	}
 
 	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
 	expected := "SELECT `id`,`email`,`name` FROM `users` WHERE `name` = ? AND `email` IN(?,?)"
 
 	if stmt != expected {
@@ -251,17 +251,18 @@ func TestStatementWhereNotIn(t *testing.T) {
 	statement := clause.Select{
 		Table:   "users",
 		Columns: []string{"id", "email", "name"},
-		WhereStatements: clause.WhereStatements{
-			WhereNotIn: []clause.WhereNotIn{
-				{
-					Field:  "email",
-					Values: []any{"johndoe@gmail.com", "test@example.com"},
-				},
+	}
+	where := clause.WhereStatements{
+		WhereNotIn: []clause.WhereNotIn{
+			{
+				Field:  "email",
+				Values: []any{"johndoe@gmail.com", "test@example.com"},
 			},
 		},
 	}
 
 	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
 	expected := "SELECT `id`,`email`,`name` FROM `users` WHERE `email` NOT IN(?,?)"
 
 	if stmt != expected {
@@ -286,18 +287,20 @@ func TestStatementWithJoin(t *testing.T) {
 				},
 			},
 		},
-		WhereStatements: clause.WhereStatements{
-			Where: []clause.Where{
-				{
-					Field: "orders.total",
-					Op:    clause.OperatorGreaterThan,
-					Value: 10000,
-				},
+	}
+	where := clause.WhereStatements{
+		Where: []clause.Where{
+			{
+				Field: "orders.total",
+				Op:    clause.OperatorGreaterThan,
+				Value: 10000,
 			},
 		},
 	}
 
 	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+
 	expected := "SELECT `users`.`id`,`users`.`email`,`orders`.`total` FROM `users` INNER JOIN `orders` ON `users`.`id` = `orders`.`user_id` WHERE `orders`.`total` > ?"
 
 	if stmt != expected {
@@ -310,21 +313,23 @@ func TestWithSubStatementWhere(t *testing.T) {
 	statement := clause.Select{
 		Table:   "users",
 		Columns: []string{"*"},
-		WhereStatements: clause.WhereStatements{
-			Where: []clause.Where{
-				{
-					Field: "roles_id",
-					Op:    clause.OperatorEqual,
-					SubStatement: clause.Select{
+	}
+	where := clause.WhereStatements{
+		Where: []clause.Where{
+			{
+				Field: "roles_id",
+				Op:    clause.OperatorEqual,
+				SubStatement: clause.SubStatement{
+					Select: clause.Select{
 						Table:   "roles",
 						Columns: []string{"id"},
-						WhereStatements: clause.WhereStatements{
-							Where: []clause.Where{
-								{
-									Field: "roles.id",
-									Op:    clause.OperatorEqual,
-									Value: 3,
-								},
+					},
+					WhereStatements: clause.WhereStatements{
+						Where: []clause.Where{
+							{
+								Field: "roles.id",
+								Op:    clause.OperatorEqual,
+								Value: 3,
 							},
 						},
 					},
@@ -334,6 +339,7 @@ func TestWithSubStatementWhere(t *testing.T) {
 	}
 
 	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
 	expected := "SELECT * FROM `users` WHERE `roles_id` = (SELECT `id` FROM `roles` WHERE `roles`.`id` = ?)"
 
 	if stmt != expected {
@@ -346,12 +352,13 @@ func TestWithGroupByStatement(t *testing.T) {
 	statement := clause.Select{
 		Table:   "users",
 		Columns: []string{"role", "COUNT(*) as total"},
-		GroupBy: clause.GroupBy{
-			Fields: []string{"role"},
-		},
+	}
+	grouping := clause.GroupBy{
+		Fields: []string{"role"},
 	}
 
 	stmt, _ := statement.Parse(dialect)
+	stmt += grouping.Parse(dialect)
 	expected := "SELECT `role`,COUNT(*) as total FROM `users` GROUP BY `role`"
 
 	if stmt != expected {
@@ -364,20 +371,22 @@ func TestWhereInParsingWithSubquery(t *testing.T) {
 	statement := clause.Select{
 		Table:   "users",
 		Columns: []string{"*"},
-		WhereStatements: clause.WhereStatements{
-			WhereIn: []clause.WhereIn{
-				{
-					Field: "id",
-					SubStatement: clause.Select{
+	}
+	where := clause.WhereStatements{
+		WhereIn: []clause.WhereIn{
+			{
+				Field: "id",
+				SubStatement: clause.SubStatement{
+					Select: clause.Select{
 						Table:   "orders",
 						Columns: []string{"user_id"},
-						WhereStatements: clause.WhereStatements{
-							Where: []clause.Where{
-								{
-									Field: "total",
-									Op:    clause.OperatorGreaterThan,
-									Value: 100,
-								},
+					},
+					WhereStatements: clause.WhereStatements{
+						Where: []clause.Where{
+							{
+								Field: "total",
+								Op:    clause.OperatorGreaterThan,
+								Value: 100,
 							},
 						},
 					},
@@ -387,6 +396,7 @@ func TestWhereInParsingWithSubquery(t *testing.T) {
 	}
 
 	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
 	expected := "SELECT * FROM `users` WHERE `id` IN (SELECT `user_id` FROM `orders` WHERE `total` > ?)"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -398,20 +408,22 @@ func TestWhereNotInParsingWithSubquery(t *testing.T) {
 	statement := clause.Select{
 		Table:   "users",
 		Columns: []string{"*"},
-		WhereStatements: clause.WhereStatements{
-			WhereNotIn: []clause.WhereNotIn{
-				{
-					Field: "id",
-					SubStatement: clause.Select{
-						Table:   "banned_users",
-						Columns: []string{"user_id"},
-					},
+	}
+	where := clause.WhereStatements{
+		WhereNotIn: []clause.WhereNotIn{
+			{
+				Field: "id",
+				SubStatement: clause.Select{
+					Table:   "banned_users",
+					Columns: []string{"user_id"},
 				},
 			},
 		},
 	}
 
 	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+
 	expected := "SELECT * FROM `users` WHERE `id` NOT IN (SELECT `user_id` FROM `banned_users`)"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -479,18 +491,19 @@ func TestUpdateStatement(t *testing.T) {
 			"name": "test",
 			"age":  25,
 		},
-		WhereStatements: clause.WhereStatements{
-			Where: []clause.Where{
-				{
-					Field: "id",
-					Op:    clause.OperatorEqual,
-					Value: 1,
-				},
+	}
+	where := clause.WhereStatements{
+		Where: []clause.Where{
+			{
+				Field: "id",
+				Op:    clause.OperatorEqual,
+				Value: 1,
 			},
 		},
 	}
 
-	stmt := dialect.ParseUpdate(statement)
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
 	expected := "UPDATE users SET `age` = ?, `name` = ? WHERE `id` = ?"
 
 	if stmt != expected {
@@ -502,18 +515,19 @@ func TestDeleteStatement(t *testing.T) {
 	dialect := NewSQLiteDialect()
 	statement := clause.Delete{
 		Table: "users",
-		WhereStatements: clause.WhereStatements{
-			Where: []clause.Where{
-				{
-					Field: "id",
-					Op:    clause.OperatorEqual,
-					Value: 1,
-				},
+	}
+	where := clause.WhereStatements{
+		Where: []clause.Where{
+			{
+				Field: "id",
+				Op:    clause.OperatorEqual,
+				Value: 1,
 			},
 		},
 	}
 
-	stmt := statement.Parse(dialect)
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
 	expected := "DELETE FROM `users` WHERE `id` = ?"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
