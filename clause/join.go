@@ -1,5 +1,10 @@
 package clause
 
+import (
+	"fmt"
+	"strings"
+)
+
 type JoinON struct {
 	Operator   Operator
 	LeftField  string
@@ -14,5 +19,5 @@ type Join struct {
 }
 
 func (j Join) Parse(dialect SQLDialector) string {
-	return dialect.ParseJoin(j)
+	return fmt.Sprintf("%s %s ON %s.%s %s %s.%s", strings.ToUpper(string(j.Type)), dialect.GetColumnQuoteLeft()+j.SecondTable+dialect.GetColumnQuoteRight(), dialect.GetColumnQuoteLeft()+j.FirstTable+dialect.GetColumnQuoteRight(), dialect.GetColumnQuoteLeft()+j.On.LeftField+dialect.GetColumnQuoteRight(), j.On.Operator, dialect.GetColumnQuoteLeft()+j.SecondTable+dialect.GetColumnQuoteRight(), dialect.GetColumnQuoteLeft()+j.On.RightField+dialect.GetColumnQuoteRight())
 }
