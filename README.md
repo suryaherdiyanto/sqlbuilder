@@ -14,6 +14,7 @@ go get github.com/suryaherdiyanto/sqlbuilder
 package main
 
 import (
+    "fmt"
 	"database/sql"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -27,14 +28,20 @@ func main() {
 
 	b := sqlbuilder.New(dialect.New("?", "`", "`"), db)
 
-	query, _ := b.
+    type User struct {
+        ID uint64
+        name string
+        username string
+    }
+
+    user := User{}
+	err := b.
 		Table("users").
 		Select("id", "email").
-		Where("id", clause.OperatorEqual, 1).
-		GetSql()
+		Where("id", "=", 1).
+		Get(&user)
 
-	args := b.GetArguments()
-	_, _ = query, args
+    fmt.Println(user)
 }
 ```
 
