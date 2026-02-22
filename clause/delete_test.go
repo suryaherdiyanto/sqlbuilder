@@ -28,3 +28,26 @@ func TestDeleteStatement(t *testing.T) {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 }
+
+func TestDeleteStatementPG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	statement := Delete{
+		Table: "users",
+	}
+	where := WhereStatements{
+		Where: []Where{
+			{
+				Field: "id",
+				Op:    OperatorEqual,
+				Value: 1,
+			},
+		},
+	}
+
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+	expected := "DELETE FROM \"users\" WHERE \"id\" = $1"
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}

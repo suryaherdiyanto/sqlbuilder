@@ -29,3 +29,27 @@ func TestSimpleSelectStatement(t *testing.T) {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}
 }
+
+func TestSimpleSelectStatementPG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	statement := Select{
+		Columns: []string{"*"},
+		Table:   "users",
+	}
+	where := WhereStatements{
+		Where: []Where{
+			{
+				Field: "email",
+				Value: "johndoe@gmail.com",
+				Op:    OperatorEqual,
+			},
+		},
+	}
+
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+	expected := "SELECT * FROM \"users\" WHERE \"email\" = $1"
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
