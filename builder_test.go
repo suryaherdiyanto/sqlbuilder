@@ -49,7 +49,7 @@ func seed(db *sql.DB) error {
 }
 
 func TestBuilder(t *testing.T) {
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
@@ -67,7 +67,7 @@ func TestBuilder(t *testing.T) {
 }
 
 func TestWithWhere(t *testing.T) {
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users").Select("*").Where("email", clause.OperatorEqual, "johndoe@gmail.com")
 
@@ -77,7 +77,7 @@ func TestWithWhere(t *testing.T) {
 }
 
 func TestWithMultipleWhere(t *testing.T) {
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
@@ -91,7 +91,7 @@ func TestWithMultipleWhere(t *testing.T) {
 }
 
 func TestWhereIn(t *testing.T) {
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users")
 
@@ -104,7 +104,7 @@ func TestWhereIn(t *testing.T) {
 }
 
 func TestWhereBetween(t *testing.T) {
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users")
 
@@ -127,7 +127,7 @@ func TestWhereBetween(t *testing.T) {
 }
 
 func TestWhereOr(t *testing.T) {
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
@@ -141,7 +141,7 @@ func TestWhereOr(t *testing.T) {
 }
 
 func TestJoin(t *testing.T) {
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
@@ -154,7 +154,7 @@ func TestJoin(t *testing.T) {
 }
 
 func TestLeftJoin(t *testing.T) {
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
@@ -166,7 +166,7 @@ func TestLeftJoin(t *testing.T) {
 }
 
 func TestRightJoin(t *testing.T) {
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
@@ -178,7 +178,7 @@ func TestRightJoin(t *testing.T) {
 }
 
 func TestWhereExists(t *testing.T) {
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
@@ -193,7 +193,7 @@ func TestWhereExists(t *testing.T) {
 }
 
 func TestWhereFuncSubquery(t *testing.T) {
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
@@ -208,7 +208,7 @@ func TestWhereFuncSubquery(t *testing.T) {
 }
 
 func TestGroupBy(t *testing.T) {
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
@@ -233,7 +233,7 @@ func TestExecuteSelectStatement(t *testing.T) {
 	}
 
 	var users []User
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder := New(dialect, dba)
 	err = builder.Table("users").Select("*").Get(&users)
 
@@ -260,7 +260,7 @@ func TestExecuteWithWhereStatement(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder := New(dialect, dba)
 	err = builder.Table("users").Select("*").Where("id", "=", 1).Limit(1).Get(user)
 
@@ -291,7 +291,7 @@ func TestExecuteSubQuery(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder := New(dialect, dba)
 	builder = builder.
 		Table("users").
@@ -330,7 +330,7 @@ func TestExecuteInsert(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder := New(dialect, dba)
 
 	id, err := builder.Table("users").Insert(map[string]any{
@@ -367,7 +367,7 @@ func TestExecuteInsertWithStructData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder := New(dialect, dba)
 	data := UserData{
 		Username: "foo",
@@ -399,7 +399,7 @@ func TestInsertMultipleRows(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder := New(dialect, dba)
 
 	res, err := builder.Table("users").InsertMany([]map[string]any{
@@ -439,7 +439,7 @@ func TestExecuteUpdateStatement(t *testing.T) {
 
 	err = seed(dba)
 
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, dba)
 
 	builder = builder.Table("users").Where("id", clause.OperatorEqual, 1).Update(map[string]any{
@@ -478,7 +478,7 @@ func TestExecuteDeleteStatement(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, dba)
 	result, err := builder.Table("users").Where("username", clause.OperatorEqual, "johndoe").Delete().Exec()
 
@@ -512,7 +512,7 @@ func TestExecuteTransaction(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, dba)
 	err = builder.Begin(func(b *SQLBuilder) error {
 		type UserRequest struct {
@@ -569,7 +569,7 @@ func TestExecute(t *testing.T) {
 	}
 
 	user := new(User)
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, dba)
 	err = builder.Table("users").Select("*").Get(user)
 
@@ -598,7 +598,7 @@ func TestExecuteWhere(t *testing.T) {
 	}
 
 	user := new(User)
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, dba)
 
 	err = builder.Table("users").Select("*").Where("email", clause.OperatorEqual, "daniel@example.com").Limit(1).Get(user)
@@ -624,7 +624,7 @@ func TestWhereAnd(t *testing.T) {
 	}
 
 	var users []User
-	dialect := dialect.NewSQLiteDialect()
+	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, dba)
 	builder.Select()
 

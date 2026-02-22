@@ -174,10 +174,10 @@ func (s *SQLBuilder) GetSql() (string, error) {
 	if s.statement.Table != "" {
 		stmt, statementObj := s.statement.Parse(s.Dialect)
 		stmt += s.WhereStatements.Parse(s.Dialect)
-		stmt += s.Dialect.ParseGroup(s.Grouping)
-		stmt += s.Dialect.ParseLimit(s.Limiting)
-		stmt += s.Dialect.ParseOffset(s.Offseting)
-		stmt += s.Dialect.ParseOrder(s.Ordering)
+		stmt += s.Grouping.Parse(s.Dialect)
+		stmt += s.Limiting.Parse(s.Dialect)
+		stmt += s.Offseting.Parse(s.Dialect)
+		stmt += s.Ordering.Parse(s.Dialect)
 
 		s.Values = append(s.Values, statementObj.Values...)
 		s.Values = append(s.Values, s.WhereStatements.Values...)
