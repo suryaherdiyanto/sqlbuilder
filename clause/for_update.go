@@ -1,6 +1,7 @@
 package clause
 
 type ForUpdate struct {
+	IsLocking  bool
 	NoWait     bool
 	SkipLocked bool
 }

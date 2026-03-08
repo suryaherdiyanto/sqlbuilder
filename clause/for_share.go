@@ -1,6 +1,7 @@
 package clause
 
 type ForShare struct {
+	IsLocking  bool
 	NoWait     bool
 	SkipLocked bool
 }
