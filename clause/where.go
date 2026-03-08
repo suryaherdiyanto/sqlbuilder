@@ -32,7 +32,9 @@ type WhereStatements struct {
 	WhereNotIn      []WhereNotIn
 	WhereBetween    []WhereBetween
 	WhereNotBetween []WhereNotBetween
-	Values          []any
+	ForUpdate
+	ForShare
+	Values []any
 }
 
 func (w Where) Parse(dialect SQLDialector) string {
