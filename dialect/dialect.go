@@ -25,3 +25,7 @@ func New(delimiter, columnQuoteLeft, columnQuoteRight string) *SQLDialect {
 		ColumnQuoteRight: columnQuoteRight,
 	}
 }
+
+func NewMySQL() *SQLDialect {
+	return New("?", "`", "`")
+}
