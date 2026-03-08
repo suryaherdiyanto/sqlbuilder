@@ -144,7 +144,7 @@ func (s *SQLBuilder) InsertMany(data []map[string]any) *SQLBuilder {
 	return s
 }
 
-func (s *SQLBuilder) Update(data map[string]any) *SQLBuilder {
+func (s *SQLBuilder) Update(data map[string]any) (sql.Result, error) {
 	s.updateStatement = clause.Update{
 		Table: s.tempTable,
 		Rows:  data,
@@ -152,17 +152,17 @@ func (s *SQLBuilder) Update(data map[string]any) *SQLBuilder {
 	s.WhereStatements = clause.WhereStatements{}
 	s.Values = []any{}
 
-	return s
+	return s.Exec()
 }
 
-func (s *SQLBuilder) Delete() *SQLBuilder {
+func (s *SQLBuilder) Delete() (sql.Result, error) {
 	s.deleteStatement = clause.Delete{
 		Table: s.tempTable,
 	}
 	s.WhereStatements = clause.WhereStatements{}
 	s.Values = []any{}
 
-	return s
+	return s.Exec()
 }
 
 func (s *SQLBuilder) Table(table string) *SQLBuilder {

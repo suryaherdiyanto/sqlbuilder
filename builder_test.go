@@ -482,11 +482,10 @@ func TestExecuteUpdateStatement(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, dba)
 
-	builder = builder.Table("users").Where("id", clause.OperatorEqual, 1).Update(map[string]any{
+	result, err := builder.Table("users").Where("id", clause.OperatorEqual, 1).Update(map[string]any{
 		"username": "john_doe_updated",
 		"age":      36,
 	})
-	result, err := builder.Exec()
 
 	if sql, err := builder.GetSql(); err != nil {
 		t.Fatal(err)
@@ -520,7 +519,7 @@ func TestExecuteDeleteStatement(t *testing.T) {
 
 	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, dba)
-	result, err := builder.Table("users").Where("username", clause.OperatorEqual, "johndoe").Delete().Exec()
+	result, err := builder.Table("users").Where("username", clause.OperatorEqual, "johndoe").Delete()
 
 	if err != nil {
 		t.Fatal(err)
@@ -584,7 +583,7 @@ func TestExecuteTransaction(t *testing.T) {
 		updateMap := map[string]any{}
 		toMap(update, updateMap)
 
-		if _, err = b.Table("users").Where("id", clause.OperatorEqual, lastInsertId).Update(updateMap).Exec(); err != nil {
+		if _, err = b.Table("users").Where("id", clause.OperatorEqual, lastInsertId).Update(updateMap); err != nil {
 			return err
 		}
 
