@@ -220,6 +220,46 @@ func TestGroupBy(t *testing.T) {
 	}
 }
 
+func TestForUpdate(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*").LockForUpdate()
+
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` FOR UPDATE" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
+func TestForShare(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*").LockForShare()
+
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` FOR SHARE" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
+func TestForUpdateQuery(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*").Where("age", clause.OperatorGreaterThan, 30).LockForUpdate()
+
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `age` > ? FOR UPDATE" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
+func TestForShareQuery(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*").Where("age", clause.OperatorGreaterThan, 30).LockForShare()
+
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `age` > ? FOR SHARE" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
 func TestExecuteSelectStatement(t *testing.T) {
 
 	dba, err := sql.Open("sqlite3", ":memory:")
