@@ -64,6 +64,8 @@ func (s *SQLBuilder) Begin(tx func(s *SQLBuilder) error) error {
 		return err
 	}
 
+	defer transaction.Rollback()
+
 	builder := &SQLBuilder{
 		tx:      transaction,
 		isTx:    true,
@@ -174,6 +176,12 @@ func (s *SQLBuilder) GetSql() (string, error) {
 	if s.statement.Table != "" {
 		stmt, statementObj := s.statement.Parse(s.Dialect)
 		stmt += s.WhereStatements.Parse(s.Dialect)
+		if s.WhereStatements.ForUpdate.IsLocking {
+			stmt += " " + s.WhereStatements.ForUpdate.Parse()
+		}
+		if s.WhereStatements.ForShare.IsLocking {
+			stmt += " " + s.WhereStatements.ForShare.Parse()
+		}
 		stmt += s.Grouping.Parse(s.Dialect)
 		stmt += s.Limiting.Parse(s.Dialect)
 		stmt += s.Offseting.Parse(s.Dialect)
@@ -402,6 +410,14 @@ func (s *SQLBuilder) Limit(n int64) *SQLBuilder {
 func (s *SQLBuilder) Offset(n int64) *SQLBuilder {
 	s.Offseting.Count = n
 	s.statement.Values = append(s.statement.Values, n)
+	return s
+}
+func (s *SQLBuilder) LockForUpdate() *SQLBuilder {
+	s.WhereStatements.ForUpdate = clause.ForUpdate{IsLocking: true}
+	return s
+}
+func (s *SQLBuilder) LockForShare() *SQLBuilder {
+	s.WhereStatements.ForShare = clause.ForShare{IsLocking: true}
 	return s
 }
 
