@@ -28,7 +28,27 @@ func seed(db *sql.DB) error {
 			age integer
 		)
 	`)
+	if err != nil {
+		return err
+	}
 
+	_, err = db.Exec(`
+		CREATE TABLE roles(
+			id integer primary key,
+			name TEXT
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`
+		CREATE TABLE user_roles(
+			id integer primary key,
+			user_id integer,
+			role_id integer
+		)
+	`)
 	if err != nil {
 		return err
 	}
@@ -39,8 +59,37 @@ func seed(db *sql.DB) error {
 		INSERT INTO users values(null, 'samuel', 'samuel@example.com', 28);
 		INSERT INTO users values(null, 'dirt', 'dirt@example.com', 20);
 		INSERT INTO users values(null, 'chris', 'chris@example.com', 25);
+		INSERT INTO users values(null, 'alice', 'alice@example.com', 29);
+		INSERT INTO users values(null, 'bob', 'bob@example.com', 31);
+		INSERT INTO users values(null, 'carol', 'carol@example.com', 27);
+		INSERT INTO users values(null, 'eve', 'eve@example.com', 24);
+		INSERT INTO users values(null, 'frank', 'frank@example.com', 38);
 	`)
+	if err != nil {
+		return err
+	}
 
+	_, err = db.Exec(`
+		INSERT INTO roles values(1, 'admin');
+		INSERT INTO roles values(2, 'staff');
+		INSERT INTO roles values(3, 'manager');
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`
+		INSERT INTO user_roles values(null, 1, 1);
+		INSERT INTO user_roles values(null, 2, 2);
+		INSERT INTO user_roles values(null, 3, 3);
+		INSERT INTO user_roles values(null, 4, 2);
+		INSERT INTO user_roles values(null, 5, 2);
+		INSERT INTO user_roles values(null, 6, 2);
+		INSERT INTO user_roles values(null, 7, 3);
+		INSERT INTO user_roles values(null, 8, 2);
+		INSERT INTO user_roles values(null, 9, 2);
+		INSERT INTO user_roles values(null, 10, 1);
+	`)
 	if err != nil {
 		return err
 	}
@@ -146,7 +195,7 @@ func TestJoin(t *testing.T) {
 	builder.Table("users").Select("*")
 
 	builder.
-		Join("roles", "id", "=", "user_id")
+		Join("roles", "users.id", clause.OperatorEqual, "roles.user_id")
 
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` INNER JOIN `roles` ON `users`.`id` = `roles`.`user_id`" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
@@ -159,7 +208,7 @@ func TestLeftJoin(t *testing.T) {
 	builder.Table("users").Select("*")
 
 	builder.
-		LeftJoin("roles", "id", clause.OperatorEqual, "user_id")
+		LeftJoin("roles", "users.id", clause.OperatorEqual, "roles.user_id")
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` LEFT JOIN `roles` ON `users`.`id` = `roles`.`user_id`" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
@@ -171,7 +220,7 @@ func TestRightJoin(t *testing.T) {
 	builder.Table("users").Select("*")
 
 	builder.
-		RightJoin("roles", "id", clause.OperatorEqual, "user_id")
+		RightJoin("roles", "users.id", clause.OperatorEqual, "roles.user_id")
 	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` RIGHT JOIN `roles` ON `users`.`id` = `roles`.`user_id`" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
@@ -281,8 +330,8 @@ func TestExecuteSelectStatement(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(users) != 5 {
-		t.Errorf("Expected return %d of users, but got %d", 5, len(users))
+	if len(users) != 10 {
+		t.Errorf("Expected return %d of users, but got %d", 10, len(users))
 	}
 }
 
@@ -315,6 +364,55 @@ func TestExecuteWithWhereStatement(t *testing.T) {
 
 	if user.Email != "johndoe@example.com" {
 		t.Errorf("Expected user email is johndoe@example.com, but got: %s", user.Email)
+	}
+}
+
+func TestExecuteWhereStatementWithJoin(t *testing.T) {
+
+	type UserWithRole struct {
+		Id       int    `db:"id"`
+		Username string `db:"username"`
+		Email    string `db:"email"`
+		Age      int    `db:"age"`
+		RoleName string `db:"name"`
+	}
+
+	user := new(UserWithRole)
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = seed(dba)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dialect := dialect.New("?", "`", "`")
+	builder := New(dialect, dba)
+	err = builder.Table("users").
+		Select("users.*", "roles.name").
+		Join("user_roles", "users.id", "=", "user_roles.user_id").
+		Join("roles", "user_roles.role_id", "=", "roles.id").
+		Where("roles.id", "=", 1).
+		Get(user)
+
+	if err != nil {
+		arguments := builder.GetArguments()
+		stmt, _ := builder.GetSql()
+
+		t.Errorf("SQL: %s", stmt)
+		t.Errorf("Arguments: %v", arguments)
+		t.Error(err)
+	}
+
+	if user.Email != "johndoe@example.com" {
+		t.Errorf("Expected user email is johndoe@example.com, but got: %s", user.Email)
+	}
+
+	if user.RoleName != "admin" {
+		t.Errorf("Expected user role is admin, but got: %s", user.RoleName)
 	}
 }
 
@@ -697,8 +795,8 @@ func TestWhereAnd(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(users) != 3 {
-		t.Errorf("Expected return %d of users, but got %d", 3, len(users))
+	if len(users) != 6 {
+		t.Errorf("Expected return %d of users, but got %d", 6, len(users))
 	}
 
 }
@@ -724,7 +822,7 @@ func TestRawStatement(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(users) != 2 {
-		t.Errorf("Expected return %d of users, but got %d", 2, len(users))
+	if len(users) != 4 {
+		t.Errorf("Expected return %d of users, but got %d", 4, len(users))
 	}
 }
