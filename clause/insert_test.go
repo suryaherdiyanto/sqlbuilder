@@ -24,7 +24,7 @@ func TestInsertStatement(t *testing.T) {
 		},
 	}
 
-	stmt := statement.Parse(dialect)
+	stmt, _ := statement.Parse(dialect)
 	expected := "INSERT INTO users(`age`,`email`,`name`) VALUES(?,?,?)"
 
 	if stmt != expected {
@@ -45,7 +45,7 @@ func TestInsertStatementPG(t *testing.T) {
 		},
 	}
 
-	stmt := statement.Parse(dialect)
+	stmt, _ := statement.Parse(dialect)
 	expected := "INSERT INTO users(\"age\",\"email\",\"name\") VALUES($1,$2,$3)"
 
 	if stmt != expected {
@@ -71,7 +71,7 @@ func TestInsertStatementMultiple(t *testing.T) {
 		},
 	}
 
-	stmt := statement.Parse(dialect)
+	stmt, _ := statement.Parse(dialect)
 	expected := "INSERT INTO users(`age`,`email`,`name`) VALUES(?,?,?),(?,?,?)"
 
 	if stmt != expected {
@@ -97,7 +97,7 @@ func TestInsertStatementMultiplePG(t *testing.T) {
 		},
 	}
 
-	stmt := statement.Parse(dialect)
+	stmt, _ := statement.Parse(dialect)
 	expected := "INSERT INTO users(\"age\",\"email\",\"name\") VALUES($1,$2,$3),($4,$5,$6)"
 
 	if stmt != expected {

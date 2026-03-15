@@ -7,11 +7,12 @@ import (
 )
 
 type Insert struct {
-	Table string
-	Rows  []map[string]any
+	Table  string
+	Rows   []map[string]any
+	Values []any
 }
 
-func (in Insert) Parse(dialect SQLDialector) string {
+func (in Insert) Parse(dialect SQLDialector) (string, Insert) {
 	columns := ""
 	keys := []string{}
 
@@ -44,7 +45,11 @@ func (in Insert) Parse(dialect SQLDialector) string {
 		if i < len(in.Rows)-1 {
 			insertValues += ","
 		}
+
+		for _, k := range keys {
+			in.Values = append(in.Values, in.Rows[i][k])
+		}
 	}
 
-	return fmt.Sprintf("INSERT INTO %s(%s) VALUES%s", in.Table, columns, insertValues)
+	return fmt.Sprintf("INSERT INTO %s(%s) VALUES%s", in.Table, columns, insertValues), in
 }
