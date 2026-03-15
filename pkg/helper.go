@@ -8,6 +8,10 @@ import (
 func ColumnSplitter(s, leftQuote, rightQuote string) string {
 	if strings.Contains(s, ".") {
 		parts := strings.SplitN(s, ".", 2)
+		if parts[1] == "*" {
+			return fmt.Sprintf("%s%s%s.%s", leftQuote, parts[0], rightQuote, parts[1])
+		}
+
 		return fmt.Sprintf("%s%s%s.%s%s%s", leftQuote, parts[0], rightQuote, leftQuote, parts[1], rightQuote)
 	}
 
