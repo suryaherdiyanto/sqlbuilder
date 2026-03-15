@@ -426,6 +426,25 @@ func TestExecuteInsertWithStructData(t *testing.T) {
 
 }
 
+func TestStatementMustBeDifferentForSameBuilderInstance(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*").Where("email", clause.OperatorEqual, "test@xample.com")
+
+	if sql, _ := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `email` = ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+
+	builder.Table("users").Select("id", "username").
+		Where("age", clause.OperatorGreaterThan, 30).
+		Where("email", clause.OperatorEqual, "test@example.com").
+		Limit(1)
+
+	if sql, _ := builder.GetSql(); sql != "SELECT `id`,`username` FROM `users` WHERE `age` > ? AND `email` = ? LIMIT ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
 func TestInsertMultipleRows(t *testing.T) {
 	dba, err := sql.Open("sqlite3", ":memory:")
 
@@ -643,7 +662,7 @@ func TestExecuteWhere(t *testing.T) {
 	err = builder.Table("users").Select("*").Where("email", clause.OperatorEqual, "daniel@example.com").Limit(1).Get(user)
 
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	if user.Email != "daniel@example.com" {
@@ -682,4 +701,30 @@ func TestWhereAnd(t *testing.T) {
 		t.Errorf("Expected return %d of users, but got %d", 3, len(users))
 	}
 
+}
+
+func TestRawStatement(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = seed(dba)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var users []User
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, dba)
+
+	err = builder.Raw("SELECT * FROM users WHERE age > ?", 30).Get(&users)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(users) != 2 {
+		t.Errorf("Expected return %d of users, but got %d", 2, len(users))
+	}
 }
