@@ -9,12 +9,6 @@ import (
 	"github.com/suryaherdiyanto/sqlbuilder/clause"
 )
 
-const (
-	pgsqlPlaceholder  = "$%d"
-	mysqlPlaceholder  = "?"
-	sqlitePlaceholder = "?"
-)
-
 type SQLBuilder struct {
 	Dialect         clause.SQLDialector
 	sql             *sql.DB
