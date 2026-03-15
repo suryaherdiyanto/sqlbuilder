@@ -19,6 +19,11 @@ func (s Select) Parse(dialect SQLDialector) (string, Select) {
 
 	columns := []string{}
 	for _, col := range s.Columns {
+		if col == "*" {
+			columns = append(columns, "*")
+			continue
+		}
+
 		columns = append(columns, pkg.ColumnSplitter(col, dialect.GetColumnQuoteLeft(), dialect.GetColumnQuoteRight()))
 	}
 
