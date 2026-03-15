@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"reflect"
-	"slices"
 
 	"github.com/suryaherdiyanto/sqlbuilder/clause"
 )
@@ -22,6 +21,7 @@ type SQLBuilder struct {
 	tx              *sql.Tx
 	isTx            bool
 	tempTable       string
+	rawStatement    string
 	statement       clause.Select
 	insertStatement clause.Insert
 	updateStatement clause.Update
@@ -30,6 +30,7 @@ type SQLBuilder struct {
 	Offseting       clause.Offset
 	Limiting        clause.Limit
 	Ordering        clause.Order
+	Values          []any
 	clause.WhereStatements
 }
 
@@ -187,13 +188,15 @@ func (s *SQLBuilder) GetSql() (string, error) {
 		stmt += s.Offseting.Parse(s.Dialect)
 		stmt += s.Ordering.Parse(s.Dialect)
 
-		s.Values = append(s.Values, statementObj.Values...)
 		s.Values = append(s.Values, s.WhereStatements.Values...)
+		s.Values = append(s.Values, statementObj.Values...)
 		return stmt, nil
 	}
 
 	if s.insertStatement.Table != "" {
-		return s.insertStatement.Parse(s.Dialect), nil
+		stmt, statementObj := s.insertStatement.Parse(s.Dialect)
+		s.Values = append(s.Values, statementObj.Values...)
+		return stmt, nil
 	}
 
 	if s.updateStatement.Table != "" {
@@ -214,41 +217,15 @@ func (s *SQLBuilder) GetSql() (string, error) {
 		return stmt, nil
 	}
 
+	if s.rawStatement != "" {
+		return s.rawStatement, nil
+	}
+
 	return "", errors.New("no valid statement found")
 }
 
 func (s *SQLBuilder) GetArguments() []any {
-
-	values := []any{}
-	if !reflect.DeepEqual(s.statement, clause.Select{}) {
-		values = append(values, s.Values...)
-	}
-
-	if !reflect.DeepEqual(s.insertStatement, clause.Insert{}) {
-		for _, row := range s.insertStatement.Rows {
-			keys := make([]string, 0, len(row))
-			for k := range row {
-				keys = append(keys, k)
-			}
-			slices.Sort(keys)
-
-			for k := range keys {
-				if val, ok := row[keys[k]]; ok {
-					values = append(values, val)
-				}
-			}
-		}
-	}
-
-	if !reflect.DeepEqual(s.updateStatement, clause.Update{}) {
-		values = append(values, s.Values...)
-	}
-
-	if !reflect.DeepEqual(s.deleteStatement, clause.Delete{}) {
-		values = append(values, s.Values...)
-	}
-
-	return values
+	return s.Values
 }
 
 func (s *SQLBuilder) Where(field string, Op clause.Operator, val any) *SQLBuilder {
@@ -421,6 +398,12 @@ func (s *SQLBuilder) LockForShare() *SQLBuilder {
 	return s
 }
 
+func (s *SQLBuilder) Raw(statement string, args ...any) *SQLBuilder {
+	s.rawStatement = statement
+	s.Values = append(s.Values, args...)
+	return s
+}
+
 func (b *SQLBuilder) Get(d any) error {
 	ctx := context.Background()
 	rows, err := b.runQuery(ctx)
@@ -497,6 +480,11 @@ func (b *SQLBuilder) Scan(d interface{}) error {
 func (s *SQLBuilder) Exec() (sql.Result, error) {
 	statement, err := s.GetSql()
 	arguments := s.GetArguments()
+
+	if s.rawStatement != "" {
+		s.rawStatement = ""
+	}
+
 	if err != nil {
 		return nil, err
 	}
