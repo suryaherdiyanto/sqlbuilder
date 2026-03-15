@@ -277,7 +277,6 @@ func (s *SQLBuilder) Join(table string, first string, operator clause.Operator, 
 	s.statement.Joins = append(s.statement.Joins, clause.Join{
 		Type:        clause.InnerJoin,
 		SecondTable: table,
-		FirstTable:  s.statement.Table,
 		On: clause.JoinON{
 			LeftField:  first,
 			Operator:   operator,
@@ -291,7 +290,6 @@ func (s *SQLBuilder) LeftJoin(table string, first string, operator clause.Operat
 	s.statement.Joins = append(s.statement.Joins, clause.Join{
 		Type:        clause.LeftJoin,
 		SecondTable: table,
-		FirstTable:  s.statement.Table,
 		On: clause.JoinON{
 			LeftField:  first,
 			Operator:   operator,
@@ -305,7 +303,6 @@ func (s *SQLBuilder) RightJoin(table string, first string, operator clause.Opera
 	s.statement.Joins = append(s.statement.Joins, clause.Join{
 		Type:        clause.RightJoin,
 		SecondTable: table,
-		FirstTable:  s.statement.Table,
 		On: clause.JoinON{
 			LeftField:  first,
 			Operator:   operator,
