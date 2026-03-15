@@ -8,8 +8,8 @@ import (
 )
 
 type WhereGroup struct {
-	Conj   Conjuction
-	Wheres []Where
+	Conj Conjuction
+	WhereStatements
 }
 
 type SubStatement struct {
@@ -45,6 +45,20 @@ func (w Where) Parse(dialect SQLDialector) string {
 			return fmt.Sprintf("%s (%s%s)", w.Op, subStmt, subWhereStmt)
 		}
 		return fmt.Sprintf("%s%s%s %s (%s%s)", dialect.GetColumnQuoteLeft(), w.Field, dialect.GetColumnQuoteRight(), w.Op, subStmt, subWhereStmt)
+	}
+
+	groupStmt := ""
+	if len(w.Groups) > 0 {
+
+		for i, v := range w.Groups {
+			if i >= 1 {
+				groupStmt += fmt.Sprintf(" %s ", v.Conj)
+			}
+
+			groupStmt += fmt.Sprintf("(%s)", v.Parse(dialect))
+		}
+
+		return groupStmt
 	}
 
 	if strings.Contains(w.Field, ".") {
@@ -142,4 +156,24 @@ func (w *WhereStatements) Parse(dialect SQLDialector) string {
 	stmt += w.ParseWhereNotBetweenStatements(dialect)
 
 	return stmt
+}
+
+func (w *WhereStatements) ParseGroup(dialect SQLDialector) string {
+	stmt := ""
+
+	stmt += w.ParseWhereStatements(dialect)
+
+	stmt += w.ParseWhereInStatements(dialect)
+
+	stmt += w.ParseWhereNotInStatements(dialect)
+
+	stmt += w.ParseWhereBetweenStatements(dialect)
+
+	stmt += w.ParseWhereNotBetweenStatements(dialect)
+
+	return stmt
+}
+
+func (wg WhereGroup) Parse(dialect SQLDialector) string {
+	return wg.WhereStatements.ParseGroup(dialect)
 }
