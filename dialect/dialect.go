@@ -1,10 +1,19 @@
 package dialect
 
 type SQLDialect struct {
+	Name             Dialect
 	Delimiter        string
 	ColumnQuoteLeft  string
 	ColumnQuoteRight string
 }
+
+type Dialect string
+
+const (
+	MySQL      Dialect = "mysql"
+	PostgreSQL Dialect = "postgresql"
+	SQLite     Dialect = "sqlite"
+)
 
 func (s SQLDialect) GetDelimiter() string {
 	return s.Delimiter
@@ -20,6 +29,7 @@ func (s SQLDialect) GetColumnQuoteRight() string {
 
 func New(delimiter, columnQuoteLeft, columnQuoteRight string) *SQLDialect {
 	return &SQLDialect{
+		Name:             SQLite,
 		Delimiter:        delimiter,
 		ColumnQuoteLeft:  columnQuoteLeft,
 		ColumnQuoteRight: columnQuoteRight,
@@ -27,5 +37,10 @@ func New(delimiter, columnQuoteLeft, columnQuoteRight string) *SQLDialect {
 }
 
 func NewMySQL() *SQLDialect {
-	return New("?", "`", "`")
+	return &SQLDialect{
+		Name:             MySQL,
+		Delimiter:        "?",
+		ColumnQuoteLeft:  "`",
+		ColumnQuoteRight: "`",
+	}
 }
