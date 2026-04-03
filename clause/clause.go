@@ -1,5 +1,7 @@
 package clause
 
+import "github.com/suryaherdiyanto/sqlbuilder/dialect"
+
 type Operator string
 type JoinType string
 type OrderDirection string
@@ -40,4 +42,5 @@ type SQLDialector interface {
 	GetDelimiter() string
 	GetColumnQuoteLeft() string
 	GetColumnQuoteRight() string
+	GetName() dialect.Dialect
 }

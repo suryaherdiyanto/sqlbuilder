@@ -27,6 +27,10 @@ func (s SQLDialect) GetColumnQuoteRight() string {
 	return s.ColumnQuoteRight
 }
 
+func (s SQLDialect) GetName() Dialect {
+	return s.Name
+}
+
 func New(delimiter, columnQuoteLeft, columnQuoteRight string) *SQLDialect {
 	return &SQLDialect{
 		Name:             SQLite,

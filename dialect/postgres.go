@@ -23,6 +23,10 @@ func (p *PostgresDialect) GetColumnQuoteRight() string {
 	return "\""
 }
 
+func (p *PostgresDialect) GetName() Dialect {
+	return PostgreSQL
+}
+
 // NewPostgres returns a PostgreSQL dialect instance.
 func NewPostgres() *PostgresDialect {
 	return &PostgresDialect{}
