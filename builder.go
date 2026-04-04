@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"reflect"
+	"strconv"
 
 	"github.com/suryaherdiyanto/sqlbuilder/clause"
 )
@@ -37,6 +38,13 @@ type Builder interface {
 	WhereNotIn(field string, values []any) *SQLBuilder
 	WhereBetween(field string, start any, end any) *SQLBuilder
 	WhereFunc(field string, operator clause.Operator, b func(b Builder) *SQLBuilder) *SQLBuilder
+	ForShare() *SQLBuilder
+	ForUpdate() *SQLBuilder
+	WhereDate(field string, operator clause.Operator, value any) *SQLBuilder
+	WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder
+	WhereMonth(field string, operator clause.Operator, value any) *SQLBuilder
+	WhereYear(field string, operator clause.Operator, value any) *SQLBuilder
+	WhereDay(field string, operator clause.Operator, value any) *SQLBuilder
 	Join(table string, first string, operator clause.Operator, second string) *SQLBuilder
 	LeftJoin(table string, first string, operator clause.Operator, second string) *SQLBuilder
 	RightJoin(table string, first string, operator clause.Operator, second string) *SQLBuilder
@@ -270,6 +278,63 @@ func (s *SQLBuilder) WhereBetween(field string, start any, end any) *SQLBuilder 
 		End:   end,
 	}
 	s.WhereStatements.WhereBetween = append(s.WhereStatements.WhereBetween, wherebetween)
+	return s
+}
+
+func (s *SQLBuilder) WhereDate(field string, operator clause.Operator, value any) *SQLBuilder {
+	wheredate := clause.WhereDate{
+		Field: field,
+		Op:    operator,
+		Value: value,
+		Conj:  clause.ConjuctionAnd,
+	}
+	s.WhereStatements.WhereDate = append(s.WhereStatements.WhereDate, wheredate)
+	return s
+}
+
+func (s *SQLBuilder) WhereMonth(field string, operator clause.Operator, value any) *SQLBuilder {
+	v := strconv.Itoa(value.(int))
+	wheremonth := clause.WhereMonth{
+		Field: field,
+		Op:    operator,
+		Value: v,
+		Conj:  clause.ConjuctionAnd,
+	}
+	s.WhereStatements.WhereMonth = append(s.WhereStatements.WhereMonth, wheremonth)
+	return s
+}
+
+func (s *SQLBuilder) WhereYear(field string, operator clause.Operator, value any) *SQLBuilder {
+	v := strconv.Itoa(value.(int))
+	whereyear := clause.WhereYear{
+		Field: field,
+		Op:    operator,
+		Value: v,
+		Conj:  clause.ConjuctionAnd,
+	}
+	s.WhereStatements.WhereYear = append(s.WhereStatements.WhereYear, whereyear)
+	return s
+}
+
+func (s *SQLBuilder) WhereDay(field string, operator clause.Operator, value any) *SQLBuilder {
+	v := strconv.Itoa(value.(int))
+	whereday := clause.WhereDay{
+		Field: field,
+		Op:    operator,
+		Value: v,
+		Conj:  clause.ConjuctionAnd,
+	}
+	s.WhereStatements.WhereDay = append(s.WhereStatements.WhereDay, whereday)
+	return s
+}
+
+func (s *SQLBuilder) ForUpdate() *SQLBuilder {
+	s.WhereStatements.ForUpdate = clause.ForUpdate{IsLocking: true}
+	return s
+}
+
+func (s *SQLBuilder) ForShare() *SQLBuilder {
+	s.WhereStatements.ForShare = clause.ForShare{IsLocking: true}
 	return s
 }
 
