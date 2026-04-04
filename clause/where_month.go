@@ -9,6 +9,7 @@ import (
 type WhereMonth struct {
 	Field string
 	Op    Operator
+	Conj  Conjuction
 	Value any
 }
 

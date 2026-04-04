@@ -9,6 +9,7 @@ import (
 type WhereDate struct {
 	Field string
 	Op    Operator
+	Conj  Conjuction
 	Value any
 }
 
