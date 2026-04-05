@@ -9,7 +9,7 @@ import (
 func TestDeleteStatement(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Delete{
-		Table: "users",
+		Table: "`users`",
 	}
 	where := WhereStatements{
 		Where: []Where{
@@ -32,7 +32,7 @@ func TestDeleteStatement(t *testing.T) {
 func TestDeleteStatementPG(t *testing.T) {
 	dialect := dialect.NewPostgres()
 	statement := Delete{
-		Table: "users",
+		Table: "\"users\"",
 	}
 	where := WhereStatements{
 		Where: []Where{

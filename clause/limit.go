@@ -11,5 +11,5 @@ func (l Limit) Parse(dialect SQLDialector) string {
 		return ""
 	}
 
-	return fmt.Sprintf(" LIMIT %s", dialect.GetDelimiter())
+	return fmt.Sprintf("LIMIT %s", dialect.GetDelimiter())
 }

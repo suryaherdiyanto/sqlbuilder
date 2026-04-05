@@ -15,7 +15,7 @@ type Select struct {
 }
 
 func (s Select) Parse(dialect SQLDialector) (string, Select) {
-	stmt := `SELECT %s FROM %s%s%s`
+	stmt := `SELECT %s FROM %s`
 
 	columns := []string{}
 	for _, col := range s.Columns {
@@ -29,9 +29,7 @@ func (s Select) Parse(dialect SQLDialector) (string, Select) {
 
 	fields := strings.Join(columns, ",")
 
-	stmt += s.ParseJoins(dialect)
-
-	return fmt.Sprintf(stmt, fields, dialect.GetColumnQuoteLeft(), s.Table, dialect.GetColumnQuoteRight()), s
+	return fmt.Sprintf(stmt, fields, s.Table), s
 }
 
 func (s Select) ParseJoins(dialect SQLDialector) string {

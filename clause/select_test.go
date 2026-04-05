@@ -10,7 +10,7 @@ func TestSimpleSelectStatement(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
 		Columns: []string{"*"},
-		Table:   "users",
+		Table:   "`users`",
 	}
 	where := WhereStatements{
 		Where: []Where{
@@ -34,7 +34,7 @@ func TestSimpleSelectStatementPG(t *testing.T) {
 	dialect := dialect.NewPostgres()
 	statement := Select{
 		Columns: []string{"*"},
-		Table:   "users",
+		Table:   "\"users\"",
 	}
 	where := WhereStatements{
 		Where: []Where{

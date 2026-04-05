@@ -9,7 +9,7 @@ import (
 func TestWithGroupByStatement(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"role", "COUNT(*) as total"},
 	}
 	grouping := GroupBy{
@@ -17,7 +17,7 @@ func TestWithGroupByStatement(t *testing.T) {
 	}
 
 	stmt, _ := statement.Parse(dialect)
-	stmt += grouping.Parse(dialect)
+	stmt += " " + grouping.Parse(dialect)
 	expected := "SELECT `role`,COUNT(*) as total FROM `users` GROUP BY `role`"
 
 	if stmt != expected {
@@ -28,7 +28,7 @@ func TestWithGroupByStatement(t *testing.T) {
 func TestWithGroupByStatementPG(t *testing.T) {
 	dialect := dialect.NewPostgres()
 	statement := Select{
-		Table:   "users",
+		Table:   "\"users\"",
 		Columns: []string{"role", "COUNT(*) as total"},
 	}
 	grouping := GroupBy{
@@ -36,7 +36,7 @@ func TestWithGroupByStatementPG(t *testing.T) {
 	}
 
 	stmt, _ := statement.Parse(dialect)
-	stmt += grouping.Parse(dialect)
+	stmt += " " + grouping.Parse(dialect)
 	expected := "SELECT \"role\",COUNT(*) as total FROM \"users\" GROUP BY \"role\""
 
 	if stmt != expected {

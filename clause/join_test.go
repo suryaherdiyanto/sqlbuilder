@@ -49,19 +49,8 @@ func TestJoinClauseParsingPG(t *testing.T) {
 func TestStatementWithJoin(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"users.id", "users.email", "orders.total"},
-		Joins: []Join{
-			{
-				Type:        InnerJoin,
-				SecondTable: "orders",
-				On: JoinON{
-					LeftField:  "users.id",
-					Operator:   OperatorEqual,
-					RightField: "orders.user_id",
-				},
-			},
-		},
 	}
 	where := WhereStatements{
 		Where: []Where{
@@ -72,8 +61,20 @@ func TestStatementWithJoin(t *testing.T) {
 			},
 		},
 	}
+	joins := []Join{
+		{
+			Type:        InnerJoin,
+			SecondTable: "orders",
+			On: JoinON{
+				LeftField:  "users.id",
+				Operator:   OperatorEqual,
+				RightField: "orders.user_id",
+			},
+		},
+	}
 
 	stmt, _ := statement.Parse(dialect)
+	stmt += " " + joins[0].Parse(dialect)
 	stmt += where.Parse(dialect)
 
 	expected := "SELECT `users`.`id`,`users`.`email`,`orders`.`total` FROM `users` INNER JOIN `orders` ON `users`.`id` = `orders`.`user_id` WHERE `orders`.`total` > ?"
@@ -86,28 +87,8 @@ func TestStatementWithJoin(t *testing.T) {
 func TestStatementMultipleJoin(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"users.*", "user_orders.total", "products.name"},
-		Joins: []Join{
-			{
-				Type:        InnerJoin,
-				SecondTable: "user_orders",
-				On: JoinON{
-					LeftField:  "users.id",
-					Operator:   OperatorEqual,
-					RightField: "user_orders.user_id",
-				},
-			},
-			{
-				Type:        InnerJoin,
-				SecondTable: "products",
-				On: JoinON{
-					LeftField:  "user_orders.product_id",
-					Operator:   OperatorEqual,
-					RightField: "products.id",
-				},
-			},
-		},
 	}
 	where := WhereStatements{
 		Where: []Where{
@@ -118,8 +99,30 @@ func TestStatementMultipleJoin(t *testing.T) {
 			},
 		},
 	}
+	joins := []Join{
+		{
+			Type:        InnerJoin,
+			SecondTable: "user_orders",
+			On: JoinON{
+				LeftField:  "users.id",
+				Operator:   OperatorEqual,
+				RightField: "user_orders.user_id",
+			},
+		},
+		{
+			Type:        InnerJoin,
+			SecondTable: "products",
+			On: JoinON{
+				LeftField:  "user_orders.product_id",
+				Operator:   OperatorEqual,
+				RightField: "products.id",
+			},
+		},
+	}
 
 	stmt, _ := statement.Parse(dialect)
+	stmt += " " + joins[0].Parse(dialect)
+	stmt += " " + joins[1].Parse(dialect)
 	stmt += where.Parse(dialect)
 
 	expected := "SELECT `users`.*,`user_orders`.`total`,`products`.`name` FROM `users` INNER JOIN `user_orders` ON `users`.`id` = `user_orders`.`user_id` INNER JOIN `products` ON `user_orders`.`product_id` = `products`.`id` WHERE `user_orders`.`total` > ?"
@@ -132,17 +135,17 @@ func TestStatementMultipleJoin(t *testing.T) {
 func TestStatementWithJoinPG(t *testing.T) {
 	dialect := dialect.NewPostgres()
 	statement := Select{
-		Table:   "users",
+		Table:   "\"users\"",
 		Columns: []string{"users.id", "users.email", "orders.total"},
-		Joins: []Join{
-			{
-				Type:        InnerJoin,
-				SecondTable: "orders",
-				On: JoinON{
-					LeftField:  "users.id",
-					Operator:   OperatorEqual,
-					RightField: "orders.user_id",
-				},
+	}
+	joins := []Join{
+		{
+			Type:        InnerJoin,
+			SecondTable: "orders",
+			On: JoinON{
+				LeftField:  "users.id",
+				Operator:   OperatorEqual,
+				RightField: "orders.user_id",
 			},
 		},
 	}
@@ -157,6 +160,7 @@ func TestStatementWithJoinPG(t *testing.T) {
 	}
 
 	stmt, _ := statement.Parse(dialect)
+	stmt += " " + joins[0].Parse(dialect)
 	stmt += where.Parse(dialect)
 
 	expected := "SELECT \"users\".\"id\",\"users\".\"email\",\"orders\".\"total\" FROM \"users\" INNER JOIN \"orders\" ON \"users\".\"id\" = \"orders\".\"user_id\" WHERE \"orders\".\"total\" > $1"

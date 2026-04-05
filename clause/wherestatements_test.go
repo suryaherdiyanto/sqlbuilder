@@ -10,7 +10,7 @@ func TestStatementMultipleWhere(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
 		Columns: []string{"*"},
-		Table:   "users",
+		Table:   "`users`",
 	}
 	where := WhereStatements{
 		Where: []Where{
@@ -40,7 +40,7 @@ func TestStatementMultipleWherePG(t *testing.T) {
 	dialect := dialect.NewPostgres()
 	statement := Select{
 		Columns: []string{"*"},
-		Table:   "users",
+		Table:   "\"users\"",
 	}
 	where := WhereStatements{
 		Where: []Where{
@@ -70,7 +70,7 @@ func TestStatementWhereConjuctionOr(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
 		Columns: []string{"*"},
-		Table:   "users",
+		Table:   "`users`",
 	}
 	where := WhereStatements{
 		Where: []Where{
@@ -100,7 +100,7 @@ func TestStatementWhereConjuctionOrPG(t *testing.T) {
 	dialect := dialect.NewPostgres()
 	statement := Select{
 		Columns: []string{"*"},
-		Table:   "users",
+		Table:   "\"users\"",
 	}
 	where := WhereStatements{
 		Where: []Where{
@@ -129,7 +129,7 @@ func TestStatementWhereConjuctionOrPG(t *testing.T) {
 func TestStatementWhereIn(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"id", "email", "name"},
 	}
 	where := WhereStatements{
@@ -153,7 +153,7 @@ func TestStatementWhereIn(t *testing.T) {
 func TestStatementWhereInPG(t *testing.T) {
 	dialect := dialect.NewPostgres()
 	statement := Select{
-		Table:   "users",
+		Table:   "\"users\"",
 		Columns: []string{"id", "email", "name"},
 	}
 	where := WhereStatements{
@@ -177,7 +177,7 @@ func TestStatementWhereInPG(t *testing.T) {
 func TestStatementWhereInWithConjuction(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"id", "email", "name"},
 	}
 	where := WhereStatements{
@@ -209,7 +209,7 @@ func TestStatementWhereInWithConjuction(t *testing.T) {
 func TestStatementWhereInWithConjuctionPG(t *testing.T) {
 	dialect := dialect.NewPostgres()
 	statement := Select{
-		Table:   "users",
+		Table:   "\"users\"",
 		Columns: []string{"id", "email", "name"},
 	}
 	where := WhereStatements{
@@ -241,7 +241,7 @@ func TestStatementWhereInWithConjuctionPG(t *testing.T) {
 func TestStatementWhereNotIn(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"id", "email", "name"},
 	}
 	where := WhereStatements{
@@ -265,7 +265,7 @@ func TestStatementWhereNotIn(t *testing.T) {
 func TestStatementWhereNotInPG(t *testing.T) {
 	dialect := dialect.NewPostgres()
 	statement := Select{
-		Table:   "users",
+		Table:   "\"users\"",
 		Columns: []string{"id", "email", "name"},
 	}
 	where := WhereStatements{
@@ -289,7 +289,7 @@ func TestStatementWhereNotInPG(t *testing.T) {
 func TestWithSubStatementWhere(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"*"},
 	}
 	where := WhereStatements{
@@ -299,7 +299,7 @@ func TestWithSubStatementWhere(t *testing.T) {
 				Op:    OperatorEqual,
 				SubStatement: SubStatement{
 					Select: Select{
-						Table:   "roles",
+						Table:   "`roles`",
 						Columns: []string{"id"},
 					},
 					WhereStatements: WhereStatements{
@@ -328,7 +328,7 @@ func TestWithSubStatementWhere(t *testing.T) {
 func TestWithSubStatementWherePG(t *testing.T) {
 	dialect := dialect.NewPostgres()
 	statement := Select{
-		Table:   "users",
+		Table:   "\"users\"",
 		Columns: []string{"*"},
 	}
 	where := WhereStatements{
@@ -338,7 +338,7 @@ func TestWithSubStatementWherePG(t *testing.T) {
 				Op:    OperatorEqual,
 				SubStatement: SubStatement{
 					Select: Select{
-						Table:   "roles",
+						Table:   "\"roles\"",
 						Columns: []string{"id"},
 					},
 					WhereStatements: WhereStatements{
@@ -367,7 +367,7 @@ func TestWithSubStatementWherePG(t *testing.T) {
 func TestWhereInParsingWithSubquery(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"*"},
 	}
 	where := WhereStatements{
@@ -376,7 +376,7 @@ func TestWhereInParsingWithSubquery(t *testing.T) {
 				Field: "id",
 				SubStatement: SubStatement{
 					Select: Select{
-						Table:   "orders",
+						Table:   "`orders`",
 						Columns: []string{"user_id"},
 					},
 					WhereStatements: WhereStatements{
@@ -404,7 +404,7 @@ func TestWhereInParsingWithSubquery(t *testing.T) {
 func TestWhereInParsingWithSubqueryPG(t *testing.T) {
 	dialect := dialect.NewPostgres()
 	statement := Select{
-		Table:   "users",
+		Table:   "\"users\"",
 		Columns: []string{"*"},
 	}
 	where := WhereStatements{
@@ -413,7 +413,7 @@ func TestWhereInParsingWithSubqueryPG(t *testing.T) {
 				Field: "id",
 				SubStatement: SubStatement{
 					Select: Select{
-						Table:   "orders",
+						Table:   "\"orders\"",
 						Columns: []string{"user_id"},
 					},
 					WhereStatements: WhereStatements{
@@ -441,7 +441,7 @@ func TestWhereInParsingWithSubqueryPG(t *testing.T) {
 func TestWhereNotInParsingWithSubquery(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"*"},
 	}
 	where := WhereStatements{
@@ -449,7 +449,7 @@ func TestWhereNotInParsingWithSubquery(t *testing.T) {
 			{
 				Field: "id",
 				SubStatement: Select{
-					Table:   "banned_users",
+					Table:   "`banned_users`",
 					Columns: []string{"user_id"},
 				},
 			},
@@ -468,7 +468,7 @@ func TestWhereNotInParsingWithSubquery(t *testing.T) {
 func TestWhereNotInParsingWithSubqueryPG(t *testing.T) {
 	dialect := dialect.NewPostgres()
 	statement := Select{
-		Table:   "users",
+		Table:   "\"users\"",
 		Columns: []string{"*"},
 	}
 	where := WhereStatements{
@@ -476,7 +476,7 @@ func TestWhereNotInParsingWithSubqueryPG(t *testing.T) {
 			{
 				Field: "id",
 				SubStatement: Select{
-					Table:   "banned_users",
+					Table:   "\"banned_users\"",
 					Columns: []string{"user_id"},
 				},
 			},
