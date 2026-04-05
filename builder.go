@@ -3,9 +3,10 @@ package sqlbuilder
 import (
 	"context"
 	"database/sql"
-	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/suryaherdiyanto/sqlbuilder/clause"
 )
@@ -38,8 +39,8 @@ type Builder interface {
 	WhereNotIn(field string, values []any) *SQLBuilder
 	WhereBetween(field string, start any, end any) *SQLBuilder
 	WhereFunc(field string, operator clause.Operator, b func(b Builder) *SQLBuilder) *SQLBuilder
-	ForShare() *SQLBuilder
-	ForUpdate() *SQLBuilder
+	LockForShare() *SQLBuilder
+	LockForUpdate() *SQLBuilder
 	WhereDate(field string, operator clause.Operator, value any) *SQLBuilder
 	WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder
 	WhereMonth(field string, operator clause.Operator, value any) *SQLBuilder
@@ -93,12 +94,13 @@ func (s *SQLBuilder) Begin(tx func(s *SQLBuilder) error) error {
 }
 
 func (b *SQLBuilder) Select(columns ...string) *SQLBuilder {
-	b.statement = clause.Select{
+	selectStatement := clause.Select{
 		Table:   b.tempTable,
 		Columns: columns,
 	}
-	b.WhereStatements = clause.WhereStatements{}
-	b.Values = []any{}
+
+	stmt, _ := selectStatement.Parse(b.Dialect)
+	b.rawStatement = stmt + b.rawStatement
 
 	return b
 }
@@ -117,12 +119,16 @@ func (s *SQLBuilder) Insert(data any) (int64, error) {
 		dataMap = data.(map[string]any)
 	}
 
-	s.insertStatement = clause.Insert{
+	insertStatement := clause.Insert{
 		Table: s.tempTable,
 		Rows: []map[string]any{
 			dataMap,
 		},
 	}
+
+	stmt, insert := insertStatement.Parse(s.Dialect)
+	s.rawStatement = stmt
+	s.Values = append(s.Values, insert.Values...)
 
 	res, err := s.Exec()
 	if err != nil {
@@ -139,91 +145,56 @@ func (s *SQLBuilder) Insert(data any) (int64, error) {
 }
 
 func (s *SQLBuilder) InsertMany(data []map[string]any) *SQLBuilder {
-	s.insertStatement = clause.Insert{
+	insertStatement := clause.Insert{
 		Table: s.tempTable,
 		Rows:  data,
 	}
+	stmt, insert := insertStatement.Parse(s.Dialect)
+	s.rawStatement = stmt
+	s.Values = append(s.Values, insert.Values...)
 
 	return s
 }
 
 func (s *SQLBuilder) Update(data map[string]any) (sql.Result, error) {
-	s.updateStatement = clause.Update{
+	updateStatement := clause.Update{
 		Table: s.tempTable,
 		Rows:  data,
 	}
-	s.WhereStatements = clause.WhereStatements{}
-	s.Values = []any{}
+
+	stmt, update := updateStatement.Parse(s.Dialect)
+	s.rawStatement = stmt + s.rawStatement
+
+	updateValues := update.Values
+	s.Values = append(updateValues, s.Values...)
 
 	return s.Exec()
 }
 
 func (s *SQLBuilder) Delete() (sql.Result, error) {
-	s.deleteStatement = clause.Delete{
+	deleteStatement := clause.Delete{
 		Table: s.tempTable,
 	}
-	s.WhereStatements = clause.WhereStatements{}
-	s.Values = []any{}
+
+	stmt, _ := deleteStatement.Parse(s.Dialect)
+	s.rawStatement = stmt + s.rawStatement
 
 	return s.Exec()
 }
 
 func (s *SQLBuilder) Table(table string) *SQLBuilder {
-	s.tempTable = table
+	s.rawStatement = ""
+	s.tempTable = ""
+	s.Values = []any{}
+
+	tableName := fmt.Sprintf("%s%s%s", s.Dialect.GetColumnQuoteLeft(), table, s.Dialect.GetColumnQuoteRight())
+	s.tempTable = tableName
 
 	return s
 }
 
-func (s *SQLBuilder) GetSql() (string, error) {
-
-	if s.statement.Table != "" {
-		stmt, statementObj := s.statement.Parse(s.Dialect)
-		stmt += s.WhereStatements.Parse(s.Dialect)
-		if s.WhereStatements.ForUpdate.IsLocking {
-			stmt += " " + s.WhereStatements.ForUpdate.Parse()
-		}
-		if s.WhereStatements.ForShare.IsLocking {
-			stmt += " " + s.WhereStatements.ForShare.Parse()
-		}
-		stmt += s.Grouping.Parse(s.Dialect)
-		stmt += s.Limiting.Parse(s.Dialect)
-		stmt += s.Offseting.Parse(s.Dialect)
-		stmt += s.Ordering.Parse(s.Dialect)
-
-		s.Values = append(s.Values, s.WhereStatements.Values...)
-		s.Values = append(s.Values, statementObj.Values...)
-		return stmt, nil
-	}
-
-	if s.insertStatement.Table != "" {
-		stmt, statementObj := s.insertStatement.Parse(s.Dialect)
-		s.Values = append(s.Values, statementObj.Values...)
-		return stmt, nil
-	}
-
-	if s.updateStatement.Table != "" {
-		stmt, statementObj := s.updateStatement.Parse(s.Dialect)
-		stmt += s.WhereStatements.Parse(s.Dialect)
-
-		s.Values = append(s.Values, statementObj.Values...)
-		s.Values = append(s.Values, s.WhereStatements.Values...)
-		return stmt, nil
-	}
-
-	if s.deleteStatement.Table != "" {
-		stmt, statementObj := s.deleteStatement.Parse(s.Dialect)
-		stmt += s.WhereStatements.Parse(s.Dialect)
-
-		s.Values = append(s.Values, statementObj.Values...)
-		s.Values = append(s.Values, s.WhereStatements.Values...)
-		return stmt, nil
-	}
-
-	if s.rawStatement != "" {
-		return s.rawStatement, nil
-	}
-
-	return "", errors.New("no valid statement found")
+func (s *SQLBuilder) GetSql() string {
+	return s.rawStatement
 }
 
 func (s *SQLBuilder) GetArguments() []any {
@@ -237,7 +208,14 @@ func (s *SQLBuilder) Where(field string, Op clause.Operator, val any) *SQLBuilde
 		Op:    Op,
 		Conj:  clause.ConjuctionAnd,
 	}
-	s.WhereStatements.Where = append(s.WhereStatements.Where, where)
+	s.Values = append(s.Values, val)
+
+	if strings.Contains(s.rawStatement, "WHERE") {
+		s.rawStatement = s.rawStatement + " " + string(where.Conj) + " " + where.Parse(s.Dialect)
+		return s
+	}
+	s.rawStatement = s.rawStatement + " WHERE " + where.Parse(s.Dialect)
+
 	return s
 }
 
@@ -248,7 +226,14 @@ func (s *SQLBuilder) WhereOr(field string, Op clause.Operator, val any) *SQLBuil
 		Op:    Op,
 		Conj:  clause.ConjuctionOr,
 	}
-	s.WhereStatements.Where = append(s.WhereStatements.Where, where)
+	s.Values = append(s.Values, val)
+
+	if strings.Contains(s.rawStatement, "WHERE") {
+		s.rawStatement = s.rawStatement + " " + string(where.Conj) + " " + where.Parse(s.Dialect)
+		return s
+	}
+	s.rawStatement = s.rawStatement + " WHERE " + where.Parse(s.Dialect)
+
 	return s
 }
 
@@ -256,8 +241,15 @@ func (s *SQLBuilder) WhereIn(field string, values []any) *SQLBuilder {
 	wherein := clause.WhereIn{
 		Field:  field,
 		Values: values,
+		Conj:   clause.ConjuctionAnd,
 	}
-	s.WhereStatements.WhereIn = append(s.WhereStatements.WhereIn, wherein)
+	s.Values = append(s.Values, values...)
+
+	if strings.Contains(s.rawStatement, "WHERE") {
+		s.rawStatement = s.rawStatement + " " + string(wherein.Conj) + " " + wherein.Parse(s.Dialect)
+		return s
+	}
+	s.rawStatement = s.rawStatement + " WHERE " + wherein.Parse(s.Dialect)
 
 	return s
 }
@@ -267,7 +259,13 @@ func (s *SQLBuilder) WhereNotIn(field string, values []any) *SQLBuilder {
 		Field:  field,
 		Values: values,
 	}
-	s.WhereStatements.WhereNotIn = append(s.WhereStatements.WhereNotIn, wherenotin)
+	s.Values = append(s.Values, values...)
+	if strings.Contains(s.rawStatement, "WHERE") {
+		s.rawStatement = s.rawStatement + " " + string(wherenotin.Conj) + " " + wherenotin.Parse(s.Dialect)
+		return s
+	}
+	s.rawStatement = s.rawStatement + " WHERE " + wherenotin.Parse(s.Dialect)
+
 	return s
 }
 
@@ -277,7 +275,13 @@ func (s *SQLBuilder) WhereBetween(field string, start any, end any) *SQLBuilder 
 		Start: start,
 		End:   end,
 	}
-	s.WhereStatements.WhereBetween = append(s.WhereStatements.WhereBetween, wherebetween)
+	s.Values = append(s.Values, start, end)
+
+	if strings.Contains(s.rawStatement, "WHERE") {
+		s.rawStatement = s.rawStatement + " " + string(wherebetween.Conj) + " " + wherebetween.Parse(s.Dialect)
+		return s
+	}
+	s.rawStatement = s.rawStatement + " WHERE " + wherebetween.Parse(s.Dialect)
 	return s
 }
 
@@ -288,7 +292,13 @@ func (s *SQLBuilder) WhereDate(field string, operator clause.Operator, value any
 		Value: value,
 		Conj:  clause.ConjuctionAnd,
 	}
-	s.WhereStatements.WhereDate = append(s.WhereStatements.WhereDate, wheredate)
+	s.Values = append(s.Values, value)
+
+	if strings.Contains(s.rawStatement, "WHERE") {
+		s.rawStatement = s.rawStatement + " " + string(wheredate.Conj) + " " + wheredate.Parse(s.Dialect)
+		return s
+	}
+	s.rawStatement = s.rawStatement + " WHERE " + wheredate.Parse(s.Dialect)
 	return s
 }
 
@@ -300,7 +310,13 @@ func (s *SQLBuilder) WhereMonth(field string, operator clause.Operator, value an
 		Value: v,
 		Conj:  clause.ConjuctionAnd,
 	}
-	s.WhereStatements.WhereMonth = append(s.WhereStatements.WhereMonth, wheremonth)
+	s.Values = append(s.Values, v)
+
+	if strings.Contains(s.rawStatement, "WHERE") {
+		s.rawStatement = s.rawStatement + " " + string(wheremonth.Conj) + " " + wheremonth.Parse(s.Dialect)
+		return s
+	}
+	s.rawStatement = s.rawStatement + " WHERE " + wheremonth.Parse(s.Dialect)
 	return s
 }
 
@@ -312,7 +328,13 @@ func (s *SQLBuilder) WhereYear(field string, operator clause.Operator, value any
 		Value: v,
 		Conj:  clause.ConjuctionAnd,
 	}
-	s.WhereStatements.WhereYear = append(s.WhereStatements.WhereYear, whereyear)
+	s.Values = append(s.Values, v)
+	if strings.Contains(s.rawStatement, "WHERE") {
+		s.rawStatement = s.rawStatement + " " + string(whereyear.Conj) + " " + whereyear.Parse(s.Dialect)
+		return s
+	}
+
+	s.rawStatement = s.rawStatement + " WHERE " + whereyear.Parse(s.Dialect)
 	return s
 }
 
@@ -324,22 +346,25 @@ func (s *SQLBuilder) WhereDay(field string, operator clause.Operator, value any)
 		Value: v,
 		Conj:  clause.ConjuctionAnd,
 	}
-	s.WhereStatements.WhereDay = append(s.WhereStatements.WhereDay, whereday)
+	if strings.Contains(s.rawStatement, "WHERE") {
+		s.rawStatement = s.rawStatement + " " + string(whereday.Conj) + " " + whereday.Parse(s.Dialect)
+		return s
+	}
 	return s
 }
 
-func (s *SQLBuilder) ForUpdate() *SQLBuilder {
-	s.WhereStatements.ForUpdate = clause.ForUpdate{IsLocking: true}
+func (s *SQLBuilder) LockForUpdate() *SQLBuilder {
+	s.rawStatement = s.rawStatement + " " + clause.ForUpdate{IsLocking: true}.Parse()
 	return s
 }
 
-func (s *SQLBuilder) ForShare() *SQLBuilder {
-	s.WhereStatements.ForShare = clause.ForShare{IsLocking: true}
+func (s *SQLBuilder) LockForShare() *SQLBuilder {
+	s.rawStatement = s.rawStatement + " " + clause.ForShare{IsLocking: true}.Parse()
 	return s
 }
 
 func (s *SQLBuilder) Join(table string, first string, operator clause.Operator, second string) *SQLBuilder {
-	s.statement.Joins = append(s.statement.Joins, clause.Join{
+	join := clause.Join{
 		Type:        clause.InnerJoin,
 		SecondTable: table,
 		On: clause.JoinON{
@@ -347,12 +372,13 @@ func (s *SQLBuilder) Join(table string, first string, operator clause.Operator, 
 			Operator:   operator,
 			RightField: second,
 		},
-	})
+	}
+	s.rawStatement = s.rawStatement + " " + join.Parse(s.Dialect)
 	return s
 }
 
 func (s *SQLBuilder) LeftJoin(table string, first string, operator clause.Operator, second string) *SQLBuilder {
-	s.statement.Joins = append(s.statement.Joins, clause.Join{
+	join := clause.Join{
 		Type:        clause.LeftJoin,
 		SecondTable: table,
 		On: clause.JoinON{
@@ -360,12 +386,13 @@ func (s *SQLBuilder) LeftJoin(table string, first string, operator clause.Operat
 			Operator:   operator,
 			RightField: second,
 		},
-	})
+	}
+	s.rawStatement = s.rawStatement + " " + join.Parse(s.Dialect)
 	return s
 }
 
 func (s *SQLBuilder) RightJoin(table string, first string, operator clause.Operator, second string) *SQLBuilder {
-	s.statement.Joins = append(s.statement.Joins, clause.Join{
+	join := clause.Join{
 		Type:        clause.RightJoin,
 		SecondTable: table,
 		On: clause.JoinON{
@@ -373,7 +400,8 @@ func (s *SQLBuilder) RightJoin(table string, first string, operator clause.Opera
 			Operator:   operator,
 			RightField: second,
 		},
-	})
+	}
+	s.rawStatement = s.rawStatement + " " + join.Parse(s.Dialect)
 	return s
 }
 
@@ -382,40 +410,40 @@ func (s *SQLBuilder) WhereFunc(field string, operator clause.Operator, builder f
 	where := clause.Where{
 		Field: field,
 		Op:    operator,
-		SubStatement: clause.SubStatement{
-			Select:          newBuilder.statement,
-			WhereStatements: newBuilder.WhereStatements,
-		},
 	}
-	s.WhereStatements.Where = append(s.WhereStatements.Where, where)
+	childStmt := newBuilder.GetSql()
+	fieldQuoted := fmt.Sprintf("%s%s%s", s.Dialect.GetColumnQuoteLeft(), field, s.Dialect.GetColumnQuoteRight())
+
+	if strings.Contains(s.rawStatement, "WHERE") {
+		s.rawStatement = s.rawStatement + " " + string(where.Conj) + " " + fieldQuoted + " " + string(where.Op) + " " + "(" + childStmt + ")"
+		return s
+	}
+	s.rawStatement = s.rawStatement + " WHERE " + fieldQuoted + " " + string(where.Op) + " " + "(" + childStmt + ")"
+	s.Values = append(s.Values, newBuilder.Values...)
 	return s
 }
 
 func (s *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder {
 	newBuilder := builder(New(s.Dialect, s.sql))
 
+	childStmt := newBuilder.GetSql()
 	where := clause.Where{
-		Op: clause.OperatorExists,
-		SubStatement: clause.SubStatement{
-			Select:          newBuilder.statement,
-			WhereStatements: newBuilder.WhereStatements,
-		},
+		Op:   clause.OperatorExists,
+		Conj: clause.ConjuctionAnd,
 	}
-	s.WhereStatements.Where = append(s.WhereStatements.Where, where)
+
+	if strings.Contains(s.rawStatement, "WHERE") {
+		s.rawStatement = s.rawStatement + " " + string(where.Conj) + " " + string(where.Op) + " " + "(" + childStmt + ")"
+		return s
+	}
+	s.rawStatement = s.rawStatement + " WHERE " + string(where.Op) + " " + "(" + childStmt + ")"
+	s.Values = append(s.Values, newBuilder.Values...)
 
 	return s
 }
 
 func (s *SQLBuilder) OrderBy(column string, dir clause.OrderDirection) *SQLBuilder {
-	if len(s.Ordering.OrderingFields) > 0 {
-		s.Ordering.OrderingFields = append(s.Ordering.OrderingFields, clause.OrderField{
-			Field:     column,
-			Direction: clause.OrderDirection(dir),
-		})
-		return s
-	}
-
-	s.Ordering = clause.Order{
+	order := clause.Order{
 		OrderingFields: []clause.OrderField{
 			{
 				Field:     column,
@@ -423,34 +451,30 @@ func (s *SQLBuilder) OrderBy(column string, dir clause.OrderDirection) *SQLBuild
 			},
 		},
 	}
+	s.rawStatement = s.rawStatement + " " + order.Parse(s.Dialect)
 	return s
 }
+
 func (s *SQLBuilder) GroupBy(columns ...string) *SQLBuilder {
-	if len(s.Grouping.Fields) > 0 {
-		s.Grouping.Fields = append(s.Grouping.Fields, columns...)
-	} else {
-		s.Grouping = clause.GroupBy{
-			Fields: columns,
-		}
+	grouping := clause.GroupBy{
+		Fields: columns,
 	}
+	s.rawStatement = s.rawStatement + " " + grouping.Parse(s.Dialect)
 	return s
 }
 func (s *SQLBuilder) Limit(n int64) *SQLBuilder {
-	s.Limiting.Count = n
-	s.statement.Values = append(s.statement.Values, n)
+	limit := clause.Limit{
+		Count: n,
+	}
+	s.rawStatement = s.rawStatement + " " + limit.Parse(s.Dialect)
+	s.Values = append(s.Values, n)
 	return s
 }
 func (s *SQLBuilder) Offset(n int64) *SQLBuilder {
-	s.Offseting.Count = n
-	s.statement.Values = append(s.statement.Values, n)
-	return s
-}
-func (s *SQLBuilder) LockForUpdate() *SQLBuilder {
-	s.WhereStatements.ForUpdate = clause.ForUpdate{IsLocking: true}
-	return s
-}
-func (s *SQLBuilder) LockForShare() *SQLBuilder {
-	s.WhereStatements.ForShare = clause.ForShare{IsLocking: true}
+	offset := clause.Offset{
+		Count: n,
+	}
+	s.rawStatement = s.rawStatement + " " + offset.Parse(s.Dialect)
 	return s
 }
 
@@ -534,15 +558,11 @@ func (b *SQLBuilder) Scan(d interface{}) error {
 	return nil
 }
 func (s *SQLBuilder) Exec() (sql.Result, error) {
-	statement, err := s.GetSql()
+	statement := s.GetSql()
 	arguments := s.GetArguments()
 
 	if s.rawStatement != "" {
 		s.rawStatement = ""
-	}
-
-	if err != nil {
-		return nil, err
 	}
 
 	if s.isTx {
@@ -552,11 +572,8 @@ func (s *SQLBuilder) Exec() (sql.Result, error) {
 	return s.sql.Exec(statement, arguments...)
 }
 func (s *SQLBuilder) ExecContext(ctx context.Context) (sql.Result, error) {
-	statement, err := s.GetSql()
+	statement := s.GetSql()
 	arguments := s.GetArguments()
-	if err != nil {
-		return nil, err
-	}
 
 	if s.isTx {
 		return s.tx.ExecContext(ctx, statement, arguments...)
@@ -565,11 +582,8 @@ func (s *SQLBuilder) ExecContext(ctx context.Context) (sql.Result, error) {
 	return s.sql.ExecContext(ctx, statement, arguments...)
 }
 func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
-	sql, err := s.GetSql()
+	sql := s.GetSql()
 	arguments := s.GetArguments()
-	if err != nil {
-		return nil, err
-	}
 
 	if s.isTx {
 		return s.tx.QueryContext(ctx, sql, arguments...)
