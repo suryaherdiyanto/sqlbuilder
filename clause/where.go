@@ -8,8 +8,8 @@ import (
 )
 
 type WhereGroup struct {
-	Conj   Conjuction
-	Wheres []Where
+	Conj Conjuction
+	WhereStatements
 }
 
 type SubStatement struct {
@@ -32,7 +32,13 @@ type WhereStatements struct {
 	WhereNotIn      []WhereNotIn
 	WhereBetween    []WhereBetween
 	WhereNotBetween []WhereNotBetween
-	Values          []any
+	WhereDate       []WhereDate
+	WhereMonth      []WhereMonth
+	WhereYear       []WhereYear
+	WhereDay        []WhereDay
+	ForUpdate
+	ForShare
+	Values []any
 }
 
 func (w Where) Parse(dialect SQLDialector) string {
@@ -43,6 +49,20 @@ func (w Where) Parse(dialect SQLDialector) string {
 			return fmt.Sprintf("%s (%s%s)", w.Op, subStmt, subWhereStmt)
 		}
 		return fmt.Sprintf("%s%s%s %s (%s%s)", dialect.GetColumnQuoteLeft(), w.Field, dialect.GetColumnQuoteRight(), w.Op, subStmt, subWhereStmt)
+	}
+
+	groupStmt := ""
+	if len(w.Groups) > 0 {
+
+		for i, v := range w.Groups {
+			if i >= 1 {
+				groupStmt += fmt.Sprintf(" %s ", v.Conj)
+			}
+
+			groupStmt += fmt.Sprintf("(%s)", v.Parse(dialect))
+		}
+
+		return groupStmt
 	}
 
 	if strings.Contains(w.Field, ".") {
@@ -123,9 +143,61 @@ func (ws *WhereStatements) ParseWhereNotBetweenStatements(dialect SQLDialector) 
 	return stmt
 }
 
+func (ws *WhereStatements) ParseWhereDateStatements(dialect SQLDialector) string {
+	stmt := ""
+	for i, v := range ws.WhereDate {
+		if i >= 1 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+
+		stmt += v.Parse(dialect)
+		ws.Values = append(ws.Values, v.Value)
+	}
+	return stmt
+}
+
+func (ws *WhereStatements) ParseWhereMonthStatements(dialect SQLDialector) string {
+	stmt := ""
+	for i, v := range ws.WhereMonth {
+		if i >= 1 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+
+		stmt += v.Parse(dialect)
+		ws.Values = append(ws.Values, v.Value)
+	}
+	return stmt
+}
+
+func (ws *WhereStatements) ParseWhereYearStatements(dialect SQLDialector) string {
+	stmt := ""
+	for i, v := range ws.WhereYear {
+		if i >= 1 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+
+		stmt += v.Parse(dialect)
+		ws.Values = append(ws.Values, v.Value)
+	}
+	return stmt
+}
+
+func (ws *WhereStatements) ParseWhereDayStatements(dialect SQLDialector) string {
+	stmt := ""
+	for i, v := range ws.WhereDay {
+		if i >= 1 {
+			stmt += fmt.Sprintf(" %s ", v.Conj)
+		}
+
+		stmt += v.Parse(dialect)
+		ws.Values = append(ws.Values, v.Value)
+	}
+	return stmt
+}
+
 func (w *WhereStatements) Parse(dialect SQLDialector) string {
 	stmt := ""
-	if len(w.Where) > 0 || len(w.WhereIn) > 0 || len(w.WhereNotIn) > 0 || len(w.WhereBetween) > 0 || len(w.WhereNotBetween) > 0 {
+	if len(w.Where) > 0 || len(w.WhereIn) > 0 || len(w.WhereNotIn) > 0 || len(w.WhereBetween) > 0 || len(w.WhereNotBetween) > 0 || len(w.WhereDate) > 0 || len(w.WhereMonth) > 0 || len(w.WhereYear) > 0 || len(w.WhereDay) > 0 {
 		stmt += " WHERE "
 	}
 
@@ -139,5 +211,33 @@ func (w *WhereStatements) Parse(dialect SQLDialector) string {
 
 	stmt += w.ParseWhereNotBetweenStatements(dialect)
 
+	stmt += w.ParseWhereDateStatements(dialect)
+
+	stmt += w.ParseWhereMonthStatements(dialect)
+
+	stmt += w.ParseWhereYearStatements(dialect)
+
+	stmt += w.ParseWhereDayStatements(dialect)
+
 	return stmt
+}
+
+func (w *WhereStatements) ParseGroup(dialect SQLDialector) string {
+	stmt := ""
+
+	stmt += w.ParseWhereStatements(dialect)
+
+	stmt += w.ParseWhereInStatements(dialect)
+
+	stmt += w.ParseWhereNotInStatements(dialect)
+
+	stmt += w.ParseWhereBetweenStatements(dialect)
+
+	stmt += w.ParseWhereNotBetweenStatements(dialect)
+
+	return stmt
+}
+
+func (wg WhereGroup) Parse(dialect SQLDialector) string {
+	return wg.WhereStatements.ParseGroup(dialect)
 }

@@ -11,7 +11,7 @@ func (g GroupBy) Parse(dialect SQLDialector) string {
 		return ""
 	}
 
-	stmt := " GROUP BY "
+	stmt := "GROUP BY "
 	for i, field := range g.Fields {
 		stmt += pkg.ColumnSplitter(field, dialect.GetColumnQuoteLeft(), dialect.GetColumnQuoteRight())
 		if i < len(g.Fields)-1 {

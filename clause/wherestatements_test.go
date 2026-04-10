@@ -10,7 +10,7 @@ func TestStatementMultipleWhere(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
 		Columns: []string{"*"},
-		Table:   "users",
+		Table:   "`users`",
 	}
 	where := WhereStatements{
 		Where: []Where{
@@ -36,11 +36,41 @@ func TestStatementMultipleWhere(t *testing.T) {
 	}
 }
 
+func TestStatementMultipleWherePG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	statement := Select{
+		Columns: []string{"*"},
+		Table:   "\"users\"",
+	}
+	where := WhereStatements{
+		Where: []Where{
+			{
+				Field: "email",
+				Value: "johndoe@gmail.com",
+				Op:    OperatorEqual,
+			},
+			{
+				Field: "access_role",
+				Value: 3,
+				Op:    OperatorLessThan,
+				Conj:  ConjuctionAnd,
+			},
+		},
+	}
+
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+	expected := "SELECT * FROM \"users\" WHERE \"email\" = $1 AND \"access_role\" < $2"
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
 func TestStatementWhereConjuctionOr(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
 		Columns: []string{"*"},
-		Table:   "users",
+		Table:   "`users`",
 	}
 	where := WhereStatements{
 		Where: []Where{
@@ -66,10 +96,40 @@ func TestStatementWhereConjuctionOr(t *testing.T) {
 	}
 }
 
+func TestStatementWhereConjuctionOrPG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	statement := Select{
+		Columns: []string{"*"},
+		Table:   "\"users\"",
+	}
+	where := WhereStatements{
+		Where: []Where{
+			{
+				Field: "email",
+				Value: "johndoe@gmail.com",
+				Op:    OperatorEqual,
+			},
+			{
+				Field: "role",
+				Value: "admin",
+				Op:    OperatorLessThan,
+				Conj:  ConjuctionOr,
+			},
+		},
+	}
+
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+	expected := "SELECT * FROM \"users\" WHERE \"email\" = $1 OR \"role\" < $2"
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
 func TestStatementWhereIn(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"id", "email", "name"},
 	}
 	where := WhereStatements{
@@ -90,10 +150,34 @@ func TestStatementWhereIn(t *testing.T) {
 	}
 }
 
+func TestStatementWhereInPG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	statement := Select{
+		Table:   "\"users\"",
+		Columns: []string{"id", "email", "name"},
+	}
+	where := WhereStatements{
+		WhereIn: []WhereIn{
+			{
+				Field:  "email",
+				Values: []any{"johndoe@gmail.com", "test@example.com"},
+			},
+		},
+	}
+
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+	expected := "SELECT \"id\",\"email\",\"name\" FROM \"users\" WHERE \"email\" IN($1,$2)"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
 func TestStatementWhereInWithConjuction(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"id", "email", "name"},
 	}
 	where := WhereStatements{
@@ -122,10 +206,42 @@ func TestStatementWhereInWithConjuction(t *testing.T) {
 	}
 }
 
+func TestStatementWhereInWithConjuctionPG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	statement := Select{
+		Table:   "\"users\"",
+		Columns: []string{"id", "email", "name"},
+	}
+	where := WhereStatements{
+		Where: []Where{
+			{
+				Field: "name",
+				Op:    OperatorEqual,
+				Value: "John",
+			},
+		},
+		WhereIn: []WhereIn{
+			{
+				Field:  "email",
+				Values: []any{"johndoe@gmail.com", "test@example.com"},
+				Conj:   ConjuctionAnd,
+			},
+		},
+	}
+
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+	expected := "SELECT \"id\",\"email\",\"name\" FROM \"users\" WHERE \"name\" = $1 AND \"email\" IN($2,$3)"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
 func TestStatementWhereNotIn(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"id", "email", "name"},
 	}
 	where := WhereStatements{
@@ -146,10 +262,34 @@ func TestStatementWhereNotIn(t *testing.T) {
 	}
 }
 
+func TestStatementWhereNotInPG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	statement := Select{
+		Table:   "\"users\"",
+		Columns: []string{"id", "email", "name"},
+	}
+	where := WhereStatements{
+		WhereNotIn: []WhereNotIn{
+			{
+				Field:  "email",
+				Values: []any{"johndoe@gmail.com", "test@example.com"},
+			},
+		},
+	}
+
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+	expected := "SELECT \"id\",\"email\",\"name\" FROM \"users\" WHERE \"email\" NOT IN($1,$2)"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
 func TestWithSubStatementWhere(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"*"},
 	}
 	where := WhereStatements{
@@ -159,7 +299,7 @@ func TestWithSubStatementWhere(t *testing.T) {
 				Op:    OperatorEqual,
 				SubStatement: SubStatement{
 					Select: Select{
-						Table:   "roles",
+						Table:   "`roles`",
 						Columns: []string{"id"},
 					},
 					WhereStatements: WhereStatements{
@@ -185,10 +325,49 @@ func TestWithSubStatementWhere(t *testing.T) {
 	}
 }
 
+func TestWithSubStatementWherePG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	statement := Select{
+		Table:   "\"users\"",
+		Columns: []string{"*"},
+	}
+	where := WhereStatements{
+		Where: []Where{
+			{
+				Field: "roles_id",
+				Op:    OperatorEqual,
+				SubStatement: SubStatement{
+					Select: Select{
+						Table:   "\"roles\"",
+						Columns: []string{"id"},
+					},
+					WhereStatements: WhereStatements{
+						Where: []Where{
+							{
+								Field: "roles.id",
+								Op:    OperatorEqual,
+								Value: 3,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+	expected := "SELECT * FROM \"users\" WHERE \"roles_id\" = (SELECT \"id\" FROM \"roles\" WHERE \"roles\".\"id\" = $1)"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
 func TestWhereInParsingWithSubquery(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"*"},
 	}
 	where := WhereStatements{
@@ -197,7 +376,7 @@ func TestWhereInParsingWithSubquery(t *testing.T) {
 				Field: "id",
 				SubStatement: SubStatement{
 					Select: Select{
-						Table:   "orders",
+						Table:   "`orders`",
 						Columns: []string{"user_id"},
 					},
 					WhereStatements: WhereStatements{
@@ -222,10 +401,47 @@ func TestWhereInParsingWithSubquery(t *testing.T) {
 	}
 }
 
+func TestWhereInParsingWithSubqueryPG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	statement := Select{
+		Table:   "\"users\"",
+		Columns: []string{"*"},
+	}
+	where := WhereStatements{
+		WhereIn: []WhereIn{
+			{
+				Field: "id",
+				SubStatement: SubStatement{
+					Select: Select{
+						Table:   "\"orders\"",
+						Columns: []string{"user_id"},
+					},
+					WhereStatements: WhereStatements{
+						Where: []Where{
+							{
+								Field: "total",
+								Op:    OperatorGreaterThan,
+								Value: 100,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+	expected := "SELECT * FROM \"users\" WHERE \"id\" IN (SELECT \"user_id\" FROM \"orders\" WHERE \"total\" > $1)"
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
 func TestWhereNotInParsingWithSubquery(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
-		Table:   "users",
+		Table:   "`users`",
 		Columns: []string{"*"},
 	}
 	where := WhereStatements{
@@ -233,7 +449,7 @@ func TestWhereNotInParsingWithSubquery(t *testing.T) {
 			{
 				Field: "id",
 				SubStatement: Select{
-					Table:   "banned_users",
+					Table:   "`banned_users`",
 					Columns: []string{"user_id"},
 				},
 			},
@@ -244,6 +460,33 @@ func TestWhereNotInParsingWithSubquery(t *testing.T) {
 	stmt += where.Parse(dialect)
 
 	expected := "SELECT * FROM `users` WHERE `id` NOT IN (SELECT `user_id` FROM `banned_users`)"
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
+func TestWhereNotInParsingWithSubqueryPG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	statement := Select{
+		Table:   "\"users\"",
+		Columns: []string{"*"},
+	}
+	where := WhereStatements{
+		WhereNotIn: []WhereNotIn{
+			{
+				Field: "id",
+				SubStatement: Select{
+					Table:   "\"banned_users\"",
+					Columns: []string{"user_id"},
+				},
+			},
+		},
+	}
+
+	stmt, _ := statement.Parse(dialect)
+	stmt += where.Parse(dialect)
+
+	expected := "SELECT * FROM \"users\" WHERE \"id\" NOT IN (SELECT \"user_id\" FROM \"banned_users\")"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
 	}

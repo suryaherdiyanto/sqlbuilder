@@ -22,7 +22,7 @@ func (u Update) Parse(dialect SQLDialector) (string, Update) {
 	slices.Sort(keys)
 
 	for _, k := range keys {
-		stmt += fmt.Sprintf("%s%s%s = ?, ", dialect.GetColumnQuoteLeft(), k, dialect.GetColumnQuoteRight())
+		stmt += fmt.Sprintf("%s%s%s = %s, ", dialect.GetColumnQuoteLeft(), k, dialect.GetColumnQuoteRight(), dialect.GetDelimiter())
 		if val, ok := u.Rows[k]; ok {
 			u.Values = append(u.Values, val)
 		}

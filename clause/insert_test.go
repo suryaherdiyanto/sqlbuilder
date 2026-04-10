@@ -24,8 +24,29 @@ func TestInsertStatement(t *testing.T) {
 		},
 	}
 
-	stmt := statement.Parse(dialect)
+	stmt, _ := statement.Parse(dialect)
 	expected := "INSERT INTO users(`age`,`email`,`name`) VALUES(?,?,?)"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
+func TestInsertStatementPG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	statement := Insert{
+		Table: "users",
+		Rows: []map[string]any{
+			{
+				"name":  "John Doe",
+				"email": "johndoe@example.com",
+				"age":   30,
+			},
+		},
+	}
+
+	stmt, _ := statement.Parse(dialect)
+	expected := "INSERT INTO users(\"age\",\"email\",\"name\") VALUES($1,$2,$3)"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -50,8 +71,34 @@ func TestInsertStatementMultiple(t *testing.T) {
 		},
 	}
 
-	stmt := statement.Parse(dialect)
+	stmt, _ := statement.Parse(dialect)
 	expected := "INSERT INTO users(`age`,`email`,`name`) VALUES(?,?,?),(?,?,?)"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
+func TestInsertStatementMultiplePG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	statement := Insert{
+		Table: "users",
+		Rows: []map[string]any{
+			{
+				"name":  "John Doe",
+				"email": "johndoe@example.com",
+				"age":   30,
+			},
+			{
+				"name":  "Foo barr",
+				"email": "foobarr@example.com",
+				"age":   21,
+			},
+		},
+	}
+
+	stmt, _ := statement.Parse(dialect)
+	expected := "INSERT INTO users(\"age\",\"email\",\"name\") VALUES($1,$2,$3),($4,$5,$6)"
 
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)

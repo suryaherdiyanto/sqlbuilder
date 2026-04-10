@@ -3,6 +3,8 @@ package clause
 import (
 	"fmt"
 	"strings"
+
+	"github.com/suryaherdiyanto/sqlbuilder/pkg"
 )
 
 type JoinON struct {
@@ -13,11 +15,14 @@ type JoinON struct {
 
 type Join struct {
 	Type        JoinType
-	FirstTable  string
 	SecondTable string
 	On          JoinON
 }
 
 func (j Join) Parse(dialect SQLDialector) string {
-	return fmt.Sprintf("%s %s ON %s.%s %s %s.%s", strings.ToUpper(string(j.Type)), dialect.GetColumnQuoteLeft()+j.SecondTable+dialect.GetColumnQuoteRight(), dialect.GetColumnQuoteLeft()+j.FirstTable+dialect.GetColumnQuoteRight(), dialect.GetColumnQuoteLeft()+j.On.LeftField+dialect.GetColumnQuoteRight(), j.On.Operator, dialect.GetColumnQuoteLeft()+j.SecondTable+dialect.GetColumnQuoteRight(), dialect.GetColumnQuoteLeft()+j.On.RightField+dialect.GetColumnQuoteRight())
+	leftField := pkg.ColumnSplitter(j.On.LeftField, dialect.GetColumnQuoteLeft(), dialect.GetColumnQuoteRight())
+	rightField := pkg.ColumnSplitter(j.On.RightField, dialect.GetColumnQuoteLeft(), dialect.GetColumnQuoteRight())
+	rightTable := dialect.GetColumnQuoteLeft() + j.SecondTable + dialect.GetColumnQuoteRight()
+
+	return fmt.Sprintf("%s %s ON %s %s %s", strings.ToUpper(string(j.Type)), rightTable, leftField, j.On.Operator, rightField)
 }

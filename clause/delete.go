@@ -8,7 +8,7 @@ type Delete struct {
 }
 
 func (d Delete) Parse(dialect SQLDialector) (string, Delete) {
-	stmt := fmt.Sprintf("DELETE FROM %s%s%s", dialect.GetColumnQuoteLeft(), d.Table, dialect.GetColumnQuoteRight())
+	stmt := fmt.Sprintf("DELETE FROM %s", d.Table)
 
 	return stmt, d
 }
