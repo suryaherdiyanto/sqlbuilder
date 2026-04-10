@@ -1,7 +1,10 @@
 package sqlbuilder
 
 import (
+	"bytes"
 	"database/sql"
+	"log"
+	"strings"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -643,4 +646,59 @@ func TestWhereAnd(t *testing.T) {
 		t.Errorf("Expected return %d of users, but got %d", 3, len(users))
 	}
 
+}
+
+func TestLoggingEnabledByDefault(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = seed(dba); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	logger := log.New(&buf, "", 0)
+	dialect := dialect.New("?", "`", "`")
+	builder := New(dialect, dba, WithLogger(logger))
+
+	var users []User
+	if err = builder.Table("users").Select("*").Limit(1).Get(&users); err != nil {
+		t.Fatal(err)
+	}
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "sqlbuilder: SELECT * FROM `users` LIMIT ? - ") {
+		t.Fatalf("expected query logging output, got: %s", logOutput)
+	}
+}
+
+func TestLoggingCanBeDisabled(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = seed(dba); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	logger := log.New(&buf, "", 0)
+	dialect := dialect.New("?", "`", "`")
+	builder := New(dialect, dba, WithLogger(logger), WithLogging(false))
+
+	_, err = builder.Table("users").Insert(map[string]any{
+		"username": "alice",
+		"email":    "alice@example.com",
+		"age":      29,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if strings.TrimSpace(buf.String()) != "" {
+		t.Fatalf("expected no logging output when disabled, got: %s", buf.String())
+	}
 }

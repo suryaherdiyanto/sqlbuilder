@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"reflect"
 	"slices"
+	"time"
 
 	"github.com/suryaherdiyanto/sqlbuilder/clause"
 )
@@ -21,6 +23,8 @@ type SQLBuilder struct {
 	sql             *sql.DB
 	tx              *sql.Tx
 	isTx            bool
+	enableLogging   bool
+	logger          queryLogger
 	tempTable       string
 	statement       clause.Select
 	insertStatement clause.Insert
@@ -32,6 +36,12 @@ type SQLBuilder struct {
 	Ordering        clause.Order
 	clause.WhereStatements
 }
+
+type queryLogger interface {
+	Printf(format string, v ...any)
+}
+
+type Option func(*SQLBuilder)
 
 type Builder interface {
 	Select(columns ...string) *SQLBuilder
@@ -51,10 +61,32 @@ type Builder interface {
 	Offset(n int64) *SQLBuilder
 }
 
-func New(dialect clause.SQLDialector, db *sql.DB) *SQLBuilder {
-	return &SQLBuilder{
-		Dialect: dialect,
-		sql:     db,
+func New(dialect clause.SQLDialector, db *sql.DB, opts ...Option) *SQLBuilder {
+	builder := &SQLBuilder{
+		Dialect:       dialect,
+		sql:           db,
+		enableLogging: true,
+		logger:        log.Default(),
+	}
+
+	for _, opt := range opts {
+		opt(builder)
+	}
+
+	return builder
+}
+
+func WithLogging(enabled bool) Option {
+	return func(s *SQLBuilder) {
+		s.enableLogging = enabled
+	}
+}
+
+func WithLogger(logger queryLogger) Option {
+	return func(s *SQLBuilder) {
+		if logger != nil {
+			s.logger = logger
+		}
 	}
 }
 
@@ -65,9 +97,11 @@ func (s *SQLBuilder) Begin(tx func(s *SQLBuilder) error) error {
 	}
 
 	builder := &SQLBuilder{
-		tx:      transaction,
-		isTx:    true,
-		Dialect: s.Dialect,
+		tx:            transaction,
+		isTx:          true,
+		Dialect:       s.Dialect,
+		enableLogging: s.enableLogging,
+		logger:        s.logger,
 	}
 
 	err = tx(builder)
@@ -485,6 +519,9 @@ func (s *SQLBuilder) Exec() (sql.Result, error) {
 		return nil, err
 	}
 
+	startedAt := time.Now()
+	defer s.logQuery(statement, arguments, startedAt)
+
 	if s.isTx {
 		return s.tx.Exec(statement, arguments...)
 	}
@@ -497,6 +534,9 @@ func (s *SQLBuilder) ExecContext(ctx context.Context) (sql.Result, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	startedAt := time.Now()
+	defer s.logQuery(statement, arguments, startedAt)
 
 	if s.isTx {
 		return s.tx.ExecContext(ctx, statement, arguments...)
@@ -511,9 +551,21 @@ func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {
 		return nil, err
 	}
 
+	startedAt := time.Now()
+	defer s.logQuery(sql, arguments, startedAt)
+
 	if s.isTx {
 		return s.tx.QueryContext(ctx, sql, arguments...)
 	}
 
 	return s.sql.QueryContext(ctx, sql, arguments...)
+}
+
+func (s *SQLBuilder) logQuery(statement string, arguments []any, startedAt time.Time) {
+	if !s.enableLogging || s.logger == nil {
+		return
+	}
+
+	_ = arguments
+	s.logger.Printf("sqlbuilder: %s - %s", statement, time.Since(startedAt))
 }
