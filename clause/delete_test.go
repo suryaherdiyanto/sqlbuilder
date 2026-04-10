@@ -11,18 +11,14 @@ func TestDeleteStatement(t *testing.T) {
 	statement := Delete{
 		Table: "`users`",
 	}
-	where := WhereStatements{
-		Where: []Where{
-			{
-				Field: "id",
-				Op:    OperatorEqual,
-				Value: 1,
-			},
-		},
+	where := Where{
+		Field: "id",
+		Op:    OperatorEqual,
+		Value: 1,
 	}
 
 	stmt, _ := statement.Parse(dialect)
-	stmt += where.Parse(dialect)
+	stmt += " WHERE " + where.Parse(dialect)
 	expected := "DELETE FROM `users` WHERE `id` = ?"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)
@@ -34,18 +30,14 @@ func TestDeleteStatementPG(t *testing.T) {
 	statement := Delete{
 		Table: "\"users\"",
 	}
-	where := WhereStatements{
-		Where: []Where{
-			{
-				Field: "id",
-				Op:    OperatorEqual,
-				Value: 1,
-			},
-		},
+	where := Where{
+		Field: "id",
+		Op:    OperatorEqual,
+		Value: 1,
 	}
 
 	stmt, _ := statement.Parse(dialect)
-	stmt += where.Parse(dialect)
+	stmt += " WHERE " + where.Parse(dialect)
 	expected := "DELETE FROM \"users\" WHERE \"id\" = $1"
 	if stmt != expected {
 		t.Errorf("Expected: %s, but got: %s", expected, stmt)

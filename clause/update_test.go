@@ -15,18 +15,14 @@ func TestUpdateStatement(t *testing.T) {
 			"age":  25,
 		},
 	}
-	where := WhereStatements{
-		Where: []Where{
-			{
-				Field: "id",
-				Op:    OperatorEqual,
-				Value: 1,
-			},
-		},
+	where := Where{
+		Field: "id",
+		Op:    OperatorEqual,
+		Value: 1,
 	}
 
 	stmt, _ := statement.Parse(dialect)
-	stmt += where.Parse(dialect)
+	stmt += " WHERE " + where.Parse(dialect)
 	expected := "UPDATE users SET `age` = ?, `name` = ? WHERE `id` = ?"
 
 	if stmt != expected {
@@ -43,18 +39,14 @@ func TestUpdateStatementPG(t *testing.T) {
 			"age":  25,
 		},
 	}
-	where := WhereStatements{
-		Where: []Where{
-			{
-				Field: "id",
-				Op:    OperatorEqual,
-				Value: 1,
-			},
-		},
+	where := Where{
+		Field: "id",
+		Op:    OperatorEqual,
+		Value: 1,
 	}
 
 	stmt, _ := statement.Parse(dialect)
-	stmt += where.Parse(dialect)
+	stmt += " WHERE " + where.Parse(dialect)
 	expected := "UPDATE users SET \"age\" = $1, \"name\" = $2 WHERE \"id\" = $3"
 
 	if stmt != expected {

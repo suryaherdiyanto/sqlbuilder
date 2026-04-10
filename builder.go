@@ -31,7 +31,6 @@ type SQLBuilder struct {
 	Limiting        clause.Limit
 	Ordering        clause.Order
 	Values          []any
-	clause.WhereStatements
 }
 
 type queryLogger interface {

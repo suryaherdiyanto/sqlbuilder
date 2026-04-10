@@ -12,8 +12,7 @@ type WhereIn struct {
 func (wi WhereIn) Parse(dialect SQLDialector) string {
 	if wi.SubStatement.Table != "" {
 		subStmt, _ := wi.SubStatement.Select.Parse(dialect)
-		subWhereStmt := wi.SubStatement.WhereStatements.Parse(dialect)
-		return fmt.Sprintf("%s%s%s IN (%s%s)", dialect.GetColumnQuoteLeft(), wi.Field, dialect.GetColumnQuoteRight(), subStmt, subWhereStmt)
+		return fmt.Sprintf("%s%s%s IN (%s)", dialect.GetColumnQuoteLeft(), wi.Field, dialect.GetColumnQuoteRight(), subStmt)
 
 	}
 	inValues := ""

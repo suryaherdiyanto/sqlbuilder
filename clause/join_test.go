@@ -52,14 +52,10 @@ func TestStatementWithJoin(t *testing.T) {
 		Table:   "`users`",
 		Columns: []string{"users.id", "users.email", "orders.total"},
 	}
-	where := WhereStatements{
-		Where: []Where{
-			{
-				Field: "orders.total",
-				Op:    OperatorGreaterThan,
-				Value: 10000,
-			},
-		},
+	where := Where{
+		Field: "orders.total",
+		Op:    OperatorGreaterThan,
+		Value: 10000,
 	}
 	joins := []Join{
 		{
@@ -75,7 +71,7 @@ func TestStatementWithJoin(t *testing.T) {
 
 	stmt, _ := statement.Parse(dialect)
 	stmt += " " + joins[0].Parse(dialect)
-	stmt += where.Parse(dialect)
+	stmt += " WHERE " + where.Parse(dialect)
 
 	expected := "SELECT `users`.`id`,`users`.`email`,`orders`.`total` FROM `users` INNER JOIN `orders` ON `users`.`id` = `orders`.`user_id` WHERE `orders`.`total` > ?"
 
@@ -90,14 +86,10 @@ func TestStatementMultipleJoin(t *testing.T) {
 		Table:   "`users`",
 		Columns: []string{"users.*", "user_orders.total", "products.name"},
 	}
-	where := WhereStatements{
-		Where: []Where{
-			{
-				Field: "user_orders.total",
-				Op:    OperatorGreaterThan,
-				Value: 10000,
-			},
-		},
+	where := Where{
+		Field: "user_orders.total",
+		Op:    OperatorGreaterThan,
+		Value: 10000,
 	}
 	joins := []Join{
 		{
@@ -123,7 +115,7 @@ func TestStatementMultipleJoin(t *testing.T) {
 	stmt, _ := statement.Parse(dialect)
 	stmt += " " + joins[0].Parse(dialect)
 	stmt += " " + joins[1].Parse(dialect)
-	stmt += where.Parse(dialect)
+	stmt += " WHERE " + where.Parse(dialect)
 
 	expected := "SELECT `users`.*,`user_orders`.`total`,`products`.`name` FROM `users` INNER JOIN `user_orders` ON `users`.`id` = `user_orders`.`user_id` INNER JOIN `products` ON `user_orders`.`product_id` = `products`.`id` WHERE `user_orders`.`total` > ?"
 
@@ -149,19 +141,15 @@ func TestStatementWithJoinPG(t *testing.T) {
 			},
 		},
 	}
-	where := WhereStatements{
-		Where: []Where{
-			{
-				Field: "orders.total",
-				Op:    OperatorGreaterThan,
-				Value: 10000,
-			},
-		},
+	where := Where{
+		Field: "orders.total",
+		Op:    OperatorGreaterThan,
+		Value: 10000,
 	}
 
 	stmt, _ := statement.Parse(dialect)
 	stmt += " " + joins[0].Parse(dialect)
-	stmt += where.Parse(dialect)
+	stmt += " WHERE " + where.Parse(dialect)
 
 	expected := "SELECT \"users\".\"id\",\"users\".\"email\",\"orders\".\"total\" FROM \"users\" INNER JOIN \"orders\" ON \"users\".\"id\" = \"orders\".\"user_id\" WHERE \"orders\".\"total\" > $1"
 
