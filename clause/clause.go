@@ -44,3 +44,7 @@ type SQLDialector interface {
 	GetColumnQuoteRight() string
 	GetName() dialect.Dialect
 }
+
+type WhereParser interface {
+	Parse(dialect SQLDialector) string
+}

@@ -1077,3 +1077,18 @@ func TestLoggingCanBeDisabled(t *testing.T) {
 		t.Fatalf("expected no logging output when disabled, got: %s", buf.String())
 	}
 }
+
+func TestStatementShouldIgnoreTheOrderOfClauses(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("id, name").
+		Where("email", clause.OperatorEqual, "test@example.com").
+		Where("age", clause.OperatorGreaterThan, 30).
+		Limit(1).
+		Select("*").
+		Join("roles", "roles.user_id", "=", "users.id")
+
+	if sql := builder.GetSql(); sql != "SELECT * FROM `users` INNER JOIN `roles` ON `roles`.`user_id` = `users`.`id` WHERE `email` = ? AND `age` > ? LIMIT ?" {
+		t.Fatalf("Unexpected SQL result, got: %s", sql)
+	}
+}
