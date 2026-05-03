@@ -27,14 +27,6 @@ type SQLBuilder struct {
 	joinClauseStatement  string
 	lockClauseStatement  string
 	tailClauseStatement  string
-	statement            clause.Select
-	insertStatement      clause.Insert
-	updateStatement      clause.Update
-	deleteStatement      clause.Delete
-	Grouping             clause.GroupBy
-	Offseting            clause.Offset
-	Limiting             clause.Limit
-	Ordering             clause.Order
 	Values               []any
 }
 
