@@ -20,7 +20,7 @@ type Where struct {
 }
 
 func (w Where) Parse(dialect SQLDialector) string {
-	field := fmt.Sprintf("%s%s%s", dialect.GetColumnQuoteLeft(), w.Field, dialect.GetColumnQuoteRight())
+	field := w.GetField(dialect)
 	if strings.Contains(w.Field, ".") {
 		field = pkg.ColumnSplitter(w.Field, dialect.GetColumnQuoteLeft(), dialect.GetColumnQuoteRight())
 	}
@@ -34,4 +34,8 @@ func (w Where) Parse(dialect SQLDialector) string {
 	}
 
 	return fmt.Sprintf("%s %s %s", field, w.Op, dialect.GetDelimiter())
+}
+
+func (w Where) GetField(dialect SQLDialector) string {
+	return fmt.Sprintf("%s%s%s", dialect.GetColumnQuoteLeft(), w.Field, dialect.GetColumnQuoteRight())
 }
