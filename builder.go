@@ -50,16 +50,25 @@ type Builder interface {
 	Where(field string, Op clause.Operator, val any) *SQLBuilder
 	OrWhere(field string, Op clause.Operator, val any) *SQLBuilder
 	WhereIn(field string, values []any) *SQLBuilder
+	OrWhereIn(field string, values []any) *SQLBuilder
 	WhereNotIn(field string, values []any) *SQLBuilder
+	OrWhereNotIn(field string, values []any) *SQLBuilder
 	WhereBetween(field string, start any, end any) *SQLBuilder
+	OrWhereBetween(field string, start any, end any) *SQLBuilder
 	WhereFunc(field string, operator clause.Operator, b func(b Builder) *SQLBuilder) *SQLBuilder
+	OrWhereFunc(field string, operator clause.Operator, b func(b Builder) *SQLBuilder) *SQLBuilder
 	LockForShare() *SQLBuilder
 	LockForUpdate() *SQLBuilder
 	WhereDate(field string, operator clause.Operator, value any) *SQLBuilder
+	OrWhereDate(field string, operator clause.Operator, value any) *SQLBuilder
 	WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder
+	OrWhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder
 	WhereMonth(field string, operator clause.Operator, value any) *SQLBuilder
+	OrWhereMonth(field string, operator clause.Operator, value any) *SQLBuilder
 	WhereYear(field string, operator clause.Operator, value any) *SQLBuilder
+	OrWhereYear(field string, operator clause.Operator, value any) *SQLBuilder
 	WhereDay(field string, operator clause.Operator, value any) *SQLBuilder
+	OrWhereDay(field string, operator clause.Operator, value any) *SQLBuilder
 	Join(table string, first string, operator clause.Operator, second string) *SQLBuilder
 	LeftJoin(table string, first string, operator clause.Operator, second string) *SQLBuilder
 	RightJoin(table string, first string, operator clause.Operator, second string) *SQLBuilder
@@ -324,39 +333,33 @@ func (s *SQLBuilder) clearStatement() {
 	s.tailClauseStatement = ""
 }
 
-func (s *SQLBuilder) Where(field string, Op clause.Operator, val any) *SQLBuilder {
+func (s *SQLBuilder) addWhere(field string, op clause.Operator, val any, conj clause.Conjuction) *SQLBuilder {
 	where := clause.Where{
 		Field: field,
 		Value: val,
-		Op:    Op,
-		Conj:  clause.ConjuctionAnd,
+		Op:    op,
+		Conj:  conj,
 	}
 	s.Values = append(s.Values, val)
 
 	s.whereClauseStatement = s.concatWhereClause(s.whereClauseStatement, where.Conj, where)
 
 	return s
+}
+
+func (s *SQLBuilder) Where(field string, Op clause.Operator, val any) *SQLBuilder {
+	return s.addWhere(field, Op, val, clause.ConjuctionAnd)
 }
 
 func (s *SQLBuilder) OrWhere(field string, Op clause.Operator, val any) *SQLBuilder {
-	where := clause.Where{
-		Field: field,
-		Value: val,
-		Op:    Op,
-		Conj:  clause.ConjuctionOr,
-	}
-	s.Values = append(s.Values, val)
-
-	s.whereClauseStatement = s.concatWhereClause(s.whereClauseStatement, where.Conj, where)
-
-	return s
+	return s.addWhere(field, Op, val, clause.ConjuctionOr)
 }
 
-func (s *SQLBuilder) WhereIn(field string, values []any) *SQLBuilder {
+func (s *SQLBuilder) addWhereIn(field string, values []any, conj clause.Conjuction) *SQLBuilder {
 	wherein := clause.WhereIn{
 		Field:  field,
 		Values: values,
-		Conj:   clause.ConjuctionAnd,
+		Conj:   conj,
 	}
 	s.Values = append(s.Values, values...)
 
@@ -365,21 +368,39 @@ func (s *SQLBuilder) WhereIn(field string, values []any) *SQLBuilder {
 	return s
 }
 
-func (s *SQLBuilder) WhereNotIn(field string, values []any) *SQLBuilder {
+func (s *SQLBuilder) WhereIn(field string, values []any) *SQLBuilder {
+	return s.addWhereIn(field, values, clause.ConjuctionAnd)
+}
+
+func (s *SQLBuilder) OrWhereIn(field string, values []any) *SQLBuilder {
+	return s.addWhereIn(field, values, clause.ConjuctionOr)
+}
+
+func (s *SQLBuilder) addWhereNotIn(field string, values []any, conj clause.Conjuction) *SQLBuilder {
 	wherenotin := clause.WhereNotIn{
 		Field:  field,
 		Values: values,
+		Conj:   conj,
 	}
 	s.Values = append(s.Values, values...)
 	s.whereClauseStatement = s.concatWhereClause(s.whereClauseStatement, wherenotin.Conj, wherenotin)
 	return s
 }
 
-func (s *SQLBuilder) WhereBetween(field string, start any, end any) *SQLBuilder {
+func (s *SQLBuilder) WhereNotIn(field string, values []any) *SQLBuilder {
+	return s.addWhereNotIn(field, values, clause.ConjuctionAnd)
+}
+
+func (s *SQLBuilder) OrWhereNotIn(field string, values []any) *SQLBuilder {
+	return s.addWhereNotIn(field, values, clause.ConjuctionOr)
+}
+
+func (s *SQLBuilder) addWhereBetween(field string, start any, end any, conj clause.Conjuction) *SQLBuilder {
 	wherebetween := clause.WhereBetween{
 		Field: field,
 		Start: start,
 		End:   end,
+		Conj:  conj,
 	}
 	s.Values = append(s.Values, start, end)
 
@@ -387,12 +408,20 @@ func (s *SQLBuilder) WhereBetween(field string, start any, end any) *SQLBuilder 
 	return s
 }
 
-func (s *SQLBuilder) WhereDate(field string, operator clause.Operator, value any) *SQLBuilder {
+func (s *SQLBuilder) WhereBetween(field string, start any, end any) *SQLBuilder {
+	return s.addWhereBetween(field, start, end, clause.ConjuctionAnd)
+}
+
+func (s *SQLBuilder) OrWhereBetween(field string, start any, end any) *SQLBuilder {
+	return s.addWhereBetween(field, start, end, clause.ConjuctionOr)
+}
+
+func (s *SQLBuilder) addWhereDate(field string, operator clause.Operator, value any, conj clause.Conjuction) *SQLBuilder {
 	wheredate := clause.WhereDate{
 		Field: field,
 		Op:    operator,
 		Value: value,
-		Conj:  clause.ConjuctionAnd,
+		Conj:  conj,
 	}
 	s.Values = append(s.Values, value)
 
@@ -401,13 +430,22 @@ func (s *SQLBuilder) WhereDate(field string, operator clause.Operator, value any
 	return s
 }
 
-func (s *SQLBuilder) WhereMonth(field string, operator clause.Operator, value any) *SQLBuilder {
+func (s *SQLBuilder) WhereDate(field string, operator clause.Operator, value any) *SQLBuilder {
+	return s.addWhereDate(field, operator, value, clause.ConjuctionAnd)
+
+}
+
+func (s *SQLBuilder) OrWhereDate(field string, operator clause.Operator, value any) *SQLBuilder {
+	return s.addWhereDate(field, operator, value, clause.ConjuctionOr)
+}
+
+func (s *SQLBuilder) addWhereMonth(field string, operator clause.Operator, value any, conj clause.Conjuction) *SQLBuilder {
 	v := strconv.Itoa(value.(int))
 	wheremonth := clause.WhereMonth{
 		Field: field,
 		Op:    operator,
 		Value: v,
-		Conj:  clause.ConjuctionAnd,
+		Conj:  conj,
 	}
 	s.Values = append(s.Values, v)
 
@@ -416,30 +454,54 @@ func (s *SQLBuilder) WhereMonth(field string, operator clause.Operator, value an
 	return s
 }
 
-func (s *SQLBuilder) WhereYear(field string, operator clause.Operator, value any) *SQLBuilder {
+func (s *SQLBuilder) WhereMonth(field string, operator clause.Operator, value any) *SQLBuilder {
+	return s.addWhereMonth(field, operator, value, clause.ConjuctionAnd)
+}
+
+func (s *SQLBuilder) OrWhereMonth(field string, operator clause.Operator, value any) *SQLBuilder {
+	return s.addWhereMonth(field, operator, value, clause.ConjuctionOr)
+}
+
+func (s *SQLBuilder) addWhereYear(field string, operator clause.Operator, value any, conj clause.Conjuction) *SQLBuilder {
 	v := strconv.Itoa(value.(int))
 	whereyear := clause.WhereYear{
 		Field: field,
 		Op:    operator,
 		Value: v,
-		Conj:  clause.ConjuctionAnd,
+		Conj:  conj,
 	}
 	s.Values = append(s.Values, v)
 	s.whereClauseStatement = s.concatWhereClause(s.whereClauseStatement, whereyear.Conj, whereyear)
 	return s
 }
 
-func (s *SQLBuilder) WhereDay(field string, operator clause.Operator, value any) *SQLBuilder {
+func (s *SQLBuilder) WhereYear(field string, operator clause.Operator, value any) *SQLBuilder {
+	return s.addWhereYear(field, operator, value, clause.ConjuctionAnd)
+}
+
+func (s *SQLBuilder) OrWhereYear(field string, operator clause.Operator, value any) *SQLBuilder {
+	return s.addWhereYear(field, operator, value, clause.ConjuctionOr)
+}
+
+func (s *SQLBuilder) addWhereDay(field string, operator clause.Operator, value any, conj clause.Conjuction) *SQLBuilder {
 	v := strconv.Itoa(value.(int))
 	whereday := clause.WhereDay{
 		Field: field,
 		Op:    operator,
 		Value: v,
-		Conj:  clause.ConjuctionAnd,
+		Conj:  conj,
 	}
 	s.Values = append(s.Values, v)
 	s.whereClauseStatement = s.concatWhereClause(s.whereClauseStatement, whereday.Conj, whereday)
 	return s
+}
+
+func (s *SQLBuilder) WhereDay(field string, operator clause.Operator, value any) *SQLBuilder {
+	return s.addWhereDay(field, operator, value, clause.ConjuctionAnd)
+}
+
+func (s *SQLBuilder) OrWhereDay(field string, operator clause.Operator, value any) *SQLBuilder {
+	return s.addWhereDay(field, operator, value, clause.ConjuctionOr)
 }
 
 func (s *SQLBuilder) LockForUpdate() *SQLBuilder {
@@ -494,12 +556,12 @@ func (s *SQLBuilder) RightJoin(table string, first string, operator clause.Opera
 	return s
 }
 
-func (s *SQLBuilder) WhereFunc(field string, operator clause.Operator, builder func(b Builder) *SQLBuilder) *SQLBuilder {
+func (s *SQLBuilder) addWhereFunc(field string, operator clause.Operator, conj clause.Conjuction, builder func(b Builder) *SQLBuilder) *SQLBuilder {
 	newBuilder := builder(New(s.Dialect, s.sql))
 	where := clause.Where{
 		Field: field,
 		Op:    operator,
-		Conj:  clause.ConjuctionAnd,
+		Conj:  conj,
 	}
 	childStmt := newBuilder.GetSql()
 
@@ -508,19 +570,35 @@ func (s *SQLBuilder) WhereFunc(field string, operator clause.Operator, builder f
 	return s
 }
 
-func (s *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder {
+func (s *SQLBuilder) WhereFunc(field string, operator clause.Operator, builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	return s.addWhereFunc(field, operator, clause.ConjuctionAnd, builder)
+}
+
+func (s *SQLBuilder) OrWhereFunc(field string, operator clause.Operator, builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	return s.addWhereFunc(field, operator, clause.ConjuctionOr, builder)
+}
+
+func (s *SQLBuilder) addWhereExists(conj clause.Conjuction, builder func(b Builder) *SQLBuilder) *SQLBuilder {
 	newBuilder := builder(New(s.Dialect, s.sql))
 
 	childStmt := newBuilder.GetSql()
 	where := clause.Where{
 		Op:   clause.OperatorExists,
-		Conj: clause.ConjuctionAnd,
+		Conj: conj,
 	}
 
 	s.Values = append(s.Values, newBuilder.Values...)
 	s.whereClauseStatement = s.concatWhereWithSubquery(s.whereClauseStatement, where, childStmt)
 
 	return s
+}
+
+func (s *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	return s.addWhereExists(clause.ConjuctionAnd, builder)
+}
+
+func (s *SQLBuilder) OrWhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	return s.addWhereExists(clause.ConjuctionOr, builder)
 }
 
 func (s *SQLBuilder) OrderBy(column string, dir clause.OrderDirection) *SQLBuilder {

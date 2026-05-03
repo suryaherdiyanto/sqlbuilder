@@ -159,6 +159,34 @@ func TestWhereIn(t *testing.T) {
 	}
 }
 
+func TestOrWhereIn(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*")
+
+	builder.
+		Where("age", clause.OperatorGreatherThanEqual, 18).
+		OrWhereIn("email", []any{"johndoe@example.com", "amal@example.com"})
+
+	if sql := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `age` >= ? OR `email` IN(?,?)" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
+func TestOrWhereNotIn(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*")
+
+	builder.
+		Where("age", clause.OperatorGreatherThanEqual, 18).
+		OrWhereNotIn("email", []any{"johndoe@example.com", "amal@example.com"})
+
+	if sql := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `age` >= ? OR `email` NOT IN(?,?)" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
 func TestWhereBetween(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
@@ -178,6 +206,20 @@ func TestWhereBetween(t *testing.T) {
 		WhereBetween("dob", "1995-02-01", "2000-01-01")
 
 	if sql := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `dob` BETWEEN ? AND ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
+func TestOrWhereBetween(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*")
+
+	builder.
+		Where("email", clause.OperatorEqual, "johndoe@example.com").
+		OrWhereBetween("age", 5, 10)
+
+	if sql := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `email` = ? OR `age` BETWEEN ? AND ?" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
@@ -257,6 +299,23 @@ func TestWhereExists(t *testing.T) {
 	}
 }
 
+func TestOrWhereExists(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*")
+
+	builder.
+		Where("email", clause.OperatorEqual, "johndoe@example.com").
+		OrWhereExists(func(b Builder) *SQLBuilder {
+			return b.Table("roles").Select("*").Where("users.name", "=", "admin")
+		})
+
+	expected := "SELECT * FROM `users` WHERE `email` = ? OR EXISTS (SELECT * FROM `roles` WHERE `users`.`name` = ?)"
+	if sql := builder.GetSql(); sql != expected {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
 func TestWhereFuncSubquery(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
@@ -277,6 +336,83 @@ func TestWhereFuncSubquery(t *testing.T) {
 	expected := "SELECT * FROM `users` WHERE `age` > ? AND `role` = (SELECT `role` FROM `roles` WHERE `users_id` = ?)"
 
 	if sql != expected {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
+func TestOrWhereFuncSubquery(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*")
+
+	builder.
+		Where("age", ">", 30).
+		OrWhereFunc("role", "=", func(b Builder) *SQLBuilder {
+			return b.Table("roles").Select("role").Where("users_id", "=", "admin")
+		})
+
+	expected := "SELECT * FROM `users` WHERE `age` > ? OR `role` = (SELECT `role` FROM `roles` WHERE `users_id` = ?)"
+	if sql := builder.GetSql(); sql != expected {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
+func TestOrWhereDate(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*")
+
+	builder.
+		Where("age", clause.OperatorGreatherThanEqual, 18).
+		OrWhereDate("created_at", clause.OperatorGreaterThan, "2023-01-01")
+
+	expected := "SELECT * FROM `users` WHERE `age` >= ? OR DATE(`created_at`) > ?"
+	if sql := builder.GetSql(); sql != expected {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
+func TestOrWhereMonth(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*")
+
+	builder.
+		Where("age", clause.OperatorGreatherThanEqual, 18).
+		OrWhereMonth("created_at", clause.OperatorEqual, 1)
+
+	expected := "SELECT * FROM `users` WHERE `age` >= ? OR strftime('%m', `created_at`) = ?"
+	if sql := builder.GetSql(); sql != expected {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
+func TestOrWhereYear(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*")
+
+	builder.
+		Where("age", clause.OperatorGreatherThanEqual, 18).
+		OrWhereYear("created_at", clause.OperatorEqual, 2023)
+
+	expected := "SELECT * FROM `users` WHERE `age` >= ? OR strftime('%Y', `created_at`) = ?"
+	if sql := builder.GetSql(); sql != expected {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
+func TestOrWhereDay(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*")
+
+	builder.
+		Where("age", clause.OperatorGreatherThanEqual, 18).
+		OrWhereDay("created_at", clause.OperatorEqual, 1)
+
+	expected := "SELECT * FROM `users` WHERE `age` >= ? OR strftime('%d', `created_at`) = ?"
+	if sql := builder.GetSql(); sql != expected {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
