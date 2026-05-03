@@ -221,8 +221,7 @@ func (s *SQLBuilder) Delete() (sql.Result, error) {
 }
 
 func (s *SQLBuilder) Table(table string) *SQLBuilder {
-	s.rawStatement = ""
-	s.tempTable = ""
+	s.clearStatement()
 	s.Values = []any{}
 
 	tableName := fmt.Sprintf("%s%s%s", s.Dialect.GetColumnQuoteLeft(), table, s.Dialect.GetColumnQuoteRight())
@@ -232,7 +231,28 @@ func (s *SQLBuilder) Table(table string) *SQLBuilder {
 }
 
 func (s *SQLBuilder) GetSql() string {
-	return s.rawStatement
+	if s.rawStatement != "" {
+		return s.rawStatement
+	}
+
+	statement := s.selectStatement
+	if s.joinClauseStatement != "" {
+		statement = statement + " " + s.joinClauseStatement
+	}
+
+	if s.whereClauseStatement != "" {
+		statement = statement + " " + s.whereClauseStatement
+	}
+
+	if s.lockClauseStatement != "" {
+		statement = statement + " " + s.lockClauseStatement
+	}
+	if s.tailClauseStatement != "" {
+		statement = statement + " " + s.tailClauseStatement
+	}
+
+	statement = strings.TrimSpace(statement)
+	return statement
 }
 
 func (s *SQLBuilder) GetArguments() []any {
@@ -245,9 +265,63 @@ func (s *SQLBuilder) concatWhereClause(statement string, conj clause.Conjuction,
 		stmt = stmt + " " + string(conj) + " " + where.Parse(s.Dialect)
 		return stmt
 	}
-	stmt = stmt + " WHERE " + where.Parse(s.Dialect)
+	stmt = stmt + "WHERE " + where.Parse(s.Dialect)
 
 	return stmt
+}
+
+func (s *SQLBuilder) concatWhereWithSubquery(statement string, w clause.Where, subquery string) string {
+	stmt := statement
+	field := w.GetField(s.Dialect)
+	cl := string(w.Op) + " (" + subquery + ")"
+
+	if strings.Contains(stmt, "WHERE") {
+		stmt = stmt + " " + string(w.Conj) + " "
+		log.Printf("stmt: %s", stmt)
+		if (w.Op != clause.OperatorExists) && (w.Op != clause.OperatorNotExists) {
+			cl = field + " " + cl
+		}
+		stmt = stmt + cl
+
+		return stmt
+	}
+
+	if (w.Op != clause.OperatorExists) && (w.Op != clause.OperatorNotExists) {
+		cl = field + " " + cl
+	}
+	stmt = stmt + "WHERE " + cl
+
+	return stmt
+}
+
+func (s *SQLBuilder) concatJoinClause(statement string, join clause.JoinParser) string {
+	stmt := statement
+	if strings.Contains(stmt, "JOIN") {
+		stmt = stmt + " " + join.Parse(s.Dialect)
+		return stmt
+	}
+	stmt = join.Parse(s.Dialect)
+	return stmt
+}
+
+func (s *SQLBuilder) concatTailClause(statement string, tail clause.TailParser) string {
+	stmt := statement
+	if strings.Contains(stmt, "GROUP BY") || strings.Contains(stmt, "ORDER BY") || strings.Contains(stmt, "LIMIT") || strings.Contains(stmt, "OFFSET") {
+		stmt = stmt + " " + tail.Parse(s.Dialect)
+		return stmt
+	}
+	stmt = tail.Parse(s.Dialect)
+	return stmt
+}
+
+func (s *SQLBuilder) clearStatement() {
+	s.rawStatement = ""
+	s.tempTable = ""
+	s.selectStatement = ""
+	s.joinClauseStatement = ""
+	s.whereClauseStatement = ""
+	s.lockClauseStatement = ""
+	s.tailClauseStatement = ""
 }
 
 func (s *SQLBuilder) Where(field string, Op clause.Operator, val any) *SQLBuilder {
@@ -388,7 +462,7 @@ func (s *SQLBuilder) Join(table string, first string, operator clause.Operator, 
 			RightField: second,
 		},
 	}
-	s.joinClauseStatement = s.joinClauseStatement + " " + join.Parse(s.Dialect)
+	s.joinClauseStatement = s.concatJoinClause(s.joinClauseStatement, join)
 	return s
 }
 
@@ -402,7 +476,7 @@ func (s *SQLBuilder) LeftJoin(table string, first string, operator clause.Operat
 			RightField: second,
 		},
 	}
-	s.joinClauseStatement = s.joinClauseStatement + " " + join.Parse(s.Dialect)
+	s.joinClauseStatement = s.concatJoinClause(s.joinClauseStatement, join)
 	return s
 }
 
@@ -416,7 +490,7 @@ func (s *SQLBuilder) RightJoin(table string, first string, operator clause.Opera
 			RightField: second,
 		},
 	}
-	s.rawStatement = s.rawStatement + " " + join.Parse(s.Dialect)
+	s.joinClauseStatement = s.concatJoinClause(s.joinClauseStatement, join)
 	return s
 }
 
@@ -425,16 +499,12 @@ func (s *SQLBuilder) WhereFunc(field string, operator clause.Operator, builder f
 	where := clause.Where{
 		Field: field,
 		Op:    operator,
+		Conj:  clause.ConjuctionAnd,
 	}
 	childStmt := newBuilder.GetSql()
-	fieldQuoted := fmt.Sprintf("%s%s%s", s.Dialect.GetColumnQuoteLeft(), field, s.Dialect.GetColumnQuoteRight())
 
-	if strings.Contains(s.rawStatement, "WHERE") {
-		s.rawStatement = s.rawStatement + " " + string(where.Conj) + " " + fieldQuoted + " " + string(where.Op) + " " + "(" + childStmt + ")"
-		return s
-	}
-	s.rawStatement = s.rawStatement + " WHERE " + fieldQuoted + " " + string(where.Op) + " " + "(" + childStmt + ")"
 	s.Values = append(s.Values, newBuilder.Values...)
+	s.whereClauseStatement = s.concatWhereWithSubquery(s.whereClauseStatement, where, childStmt)
 	return s
 }
 
@@ -447,12 +517,8 @@ func (s *SQLBuilder) WhereExists(builder func(b Builder) *SQLBuilder) *SQLBuilde
 		Conj: clause.ConjuctionAnd,
 	}
 
-	if strings.Contains(s.rawStatement, "WHERE") {
-		s.rawStatement = s.rawStatement + " " + string(where.Conj) + " " + string(where.Op) + " " + "(" + childStmt + ")"
-		return s
-	}
-	s.rawStatement = s.rawStatement + " WHERE " + string(where.Op) + " " + "(" + childStmt + ")"
 	s.Values = append(s.Values, newBuilder.Values...)
+	s.whereClauseStatement = s.concatWhereWithSubquery(s.whereClauseStatement, where, childStmt)
 
 	return s
 }
@@ -466,7 +532,7 @@ func (s *SQLBuilder) OrderBy(column string, dir clause.OrderDirection) *SQLBuild
 			},
 		},
 	}
-	s.rawStatement = s.rawStatement + " " + order.Parse(s.Dialect)
+	s.tailClauseStatement = s.tailClauseStatement + " " + order.Parse(s.Dialect)
 	return s
 }
 
@@ -474,14 +540,14 @@ func (s *SQLBuilder) GroupBy(columns ...string) *SQLBuilder {
 	grouping := clause.GroupBy{
 		Fields: columns,
 	}
-	s.rawStatement = s.rawStatement + " " + grouping.Parse(s.Dialect)
+	s.tailClauseStatement = s.concatTailClause(s.tailClauseStatement, grouping)
 	return s
 }
 func (s *SQLBuilder) Limit(n int64) *SQLBuilder {
 	limit := clause.Limit{
 		Count: n,
 	}
-	s.rawStatement = s.rawStatement + " " + limit.Parse(s.Dialect)
+	s.tailClauseStatement = s.concatTailClause(s.tailClauseStatement, limit)
 	s.Values = append(s.Values, n)
 	return s
 }
@@ -489,7 +555,7 @@ func (s *SQLBuilder) Offset(n int64) *SQLBuilder {
 	offset := clause.Offset{
 		Count: n,
 	}
-	s.rawStatement = s.rawStatement + " " + offset.Parse(s.Dialect)
+	s.tailClauseStatement = s.concatTailClause(s.tailClauseStatement, offset)
 	return s
 }
 

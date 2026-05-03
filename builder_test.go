@@ -246,6 +246,15 @@ func TestWhereExists(t *testing.T) {
 	if sql := builder.GetSql(); sql != "SELECT * FROM `users` WHERE EXISTS (SELECT * FROM `roles` WHERE `users`.`id` = ?)" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
+
+	sql := builder.Table("users").Select("*").Where("email", "=", "johndoe@example.com").WhereExists(func(b Builder) *SQLBuilder {
+		return b.Table("roles").Select("*").Where("users.name", "=", "admin")
+	}).GetSql()
+	exptected := "SELECT * FROM `users` WHERE `email` = ? AND EXISTS (SELECT * FROM `roles` WHERE `users`.`name` = ?)"
+
+	if sql != exptected {
+		t.Errorf("Unexpected sql results, got: %s", sql)
+	}
 }
 
 func TestWhereFuncSubquery(t *testing.T) {
@@ -259,6 +268,15 @@ func TestWhereFuncSubquery(t *testing.T) {
 		})
 
 	if sql := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `email` = (SELECT `user_id` FROM `roles` WHERE `users`.`id` = ?)" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+
+	sql := builder.Table("users").Select("*").Where("age", ">", 30).WhereFunc("role", "=", func(b Builder) *SQLBuilder {
+		return b.Table("roles").Select("role").Where("users_id", "=", "admin")
+	}).GetSql()
+	expected := "SELECT * FROM `users` WHERE `age` > ? AND `role` = (SELECT `role` FROM `roles` WHERE `users_id` = ?)"
+
+	if sql != expected {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
 	}
 }
