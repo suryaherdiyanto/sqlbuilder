@@ -48,7 +48,7 @@ type Builder interface {
 	Select(columns ...string) *SQLBuilder
 	Table(table string) *SQLBuilder
 	Where(field string, Op clause.Operator, val any) *SQLBuilder
-	WhereOr(field string, Op clause.Operator, val any) *SQLBuilder
+	OrWhere(field string, Op clause.Operator, val any) *SQLBuilder
 	WhereIn(field string, values []any) *SQLBuilder
 	WhereNotIn(field string, values []any) *SQLBuilder
 	WhereBetween(field string, start any, end any) *SQLBuilder
@@ -338,7 +338,7 @@ func (s *SQLBuilder) Where(field string, Op clause.Operator, val any) *SQLBuilde
 	return s
 }
 
-func (s *SQLBuilder) WhereOr(field string, Op clause.Operator, val any) *SQLBuilder {
+func (s *SQLBuilder) OrWhere(field string, Op clause.Operator, val any) *SQLBuilder {
 	where := clause.Where{
 		Field: field,
 		Value: val,

@@ -182,14 +182,14 @@ func TestWhereBetween(t *testing.T) {
 	}
 }
 
-func TestWhereOr(t *testing.T) {
+func TestOrWhere(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
 	builder.Table("users").Select("*")
 
 	builder.
 		Where("age", clause.OperatorGreatherThanEqual, 18).
-		WhereOr("email", clause.OperatorEqual, "johndoe@example.com")
+		OrWhere("email", clause.OperatorEqual, "johndoe@example.com")
 
 	if sql := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `age` >= ? OR `email` = ?" {
 		t.Errorf("Unexpected SQL result, got: %s", sql)
