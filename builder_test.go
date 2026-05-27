@@ -1257,3 +1257,30 @@ func TestStatementShouldIgnoreTheOrderOfClauses(t *testing.T) {
 		t.Fatalf("Unexpected SQL result, got: %s", sql)
 	}
 }
+
+func TestExecuteAggregateCount(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = seed(dba)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, dba)
+
+	count, err := builder.Table("users").Where("age", clause.OperatorGreaterThan, 30).Count()
+
+	if err != nil {
+		sql := builder.GetSql()
+		t.Error(err)
+		t.Errorf("Query: %s", sql)
+	}
+
+	if count != 4 {
+		t.Errorf("Expected count to be %d, but got: %d", 4, count)
+	}
+}

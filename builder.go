@@ -500,6 +500,30 @@ func (b *SQLBuilder) GetContext(d any, ctx context.Context) error {
 
 	return nil
 }
+
+func (b *SQLBuilder) Count() (int64, error) {
+	var count int64
+	selectStatement := clause.Select{
+		Table:   b.tempTable,
+		Columns: []string{"COUNT(*) AS count"},
+	}
+	stmt, _ := selectStatement.Parse(b.Dialect)
+	b.selectStatement = stmt
+
+	rows, err := b.runQuery(context.Background())
+	if err != nil {
+		return 0, err
+	}
+
+	if rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			return 0, err
+		}
+	}
+
+	return count, nil
+}
+
 func (b *SQLBuilder) Scan(d interface{}) error {
 	rows, err := b.runQuery(context.Background())
 
