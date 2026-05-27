@@ -122,6 +122,17 @@ func TestBuilder(t *testing.T) {
 
 }
 
+func TestSelectAll(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+
+	builder.Table("users").Where("email", clause.OperatorEqual, "johndoe@example.com")
+
+	if sql := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `email` = ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
 func TestWithWhere(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)

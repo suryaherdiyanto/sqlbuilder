@@ -228,6 +228,13 @@ func (s *SQLBuilder) Table(table string) *SQLBuilder {
 	tableName := fmt.Sprintf("%s%s%s", s.Dialect.GetColumnQuoteLeft(), table, s.Dialect.GetColumnQuoteRight())
 	s.tempTable = tableName
 
+	selectStatement := clause.Select{
+		Table:   s.tempTable,
+		Columns: []string{"*"},
+	}
+	stmt, _ := selectStatement.Parse(s.Dialect)
+	s.selectStatement = stmt
+
 	return s
 }
 
