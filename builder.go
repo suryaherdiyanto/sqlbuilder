@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/suryaherdiyanto/sqlbuilder/clause"
+	"github.com/suryaherdiyanto/sqlbuilder/pkg"
 )
 
 type SQLBuilder struct {
@@ -503,25 +504,72 @@ func (b *SQLBuilder) GetContext(d any, ctx context.Context) error {
 
 func (b *SQLBuilder) Count() (int64, error) {
 	var count int64
+	if err := b.runAggregateQuery("COUNT(*) AS count", &count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (b *SQLBuilder) Sum(column string) (float64, error) {
+	var sum float64
+	if err := b.runAggregateQuery(b.aggregateExpression("SUM", column, "sum"), &sum); err != nil {
+		return 0, err
+	}
+
+	return sum, nil
+}
+
+func (b *SQLBuilder) Avg(column string) (float64, error) {
+	var avg float64
+	if err := b.runAggregateQuery(b.aggregateExpression("AVG", column, "avg"), &avg); err != nil {
+		return 0, err
+	}
+
+	return avg, nil
+}
+
+func (b *SQLBuilder) Min(column string) (float64, error) {
+	var min float64
+	if err := b.runAggregateQuery(b.aggregateExpression("MIN", column, "min"), &min); err != nil {
+		return 0, err
+	}
+
+	return min, nil
+}
+
+func (b *SQLBuilder) Max(column string) (float64, error) {
+	var max float64
+	if err := b.runAggregateQuery(b.aggregateExpression("MAX", column, "max"), &max); err != nil {
+		return 0, err
+	}
+
+	return max, nil
+}
+
+func (b *SQLBuilder) aggregateExpression(fn string, column string, alias string) string {
+	return fmt.Sprintf("%s(%s) AS %s", fn, pkg.ColumnSplitter(column, b.Dialect.GetColumnQuoteLeft(), b.Dialect.GetColumnQuoteRight()), alias)
+}
+
+func (b *SQLBuilder) runAggregateQuery(column string, dest any) error {
 	selectStatement := clause.Select{
 		Table:   b.tempTable,
-		Columns: []string{"COUNT(*) AS count"},
+		Columns: []string{column},
 	}
 	stmt, _ := selectStatement.Parse(b.Dialect)
 	b.selectStatement = stmt
 
 	rows, err := b.runQuery(context.Background())
 	if err != nil {
-		return 0, err
+		return err
 	}
+	defer rows.Close()
 
 	if rows.Next() {
-		if err = rows.Scan(&count); err != nil {
-			return 0, err
-		}
+		return rows.Scan(dest)
 	}
 
-	return count, nil
+	return nil
 }
 
 func (b *SQLBuilder) Scan(d interface{}) error {
