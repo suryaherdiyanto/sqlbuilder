@@ -275,6 +275,17 @@ func TestRightJoin(t *testing.T) {
 	}
 }
 
+func TestCrossJoin(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*")
+
+	builder.CrossJoin("roles")
+	if sql := builder.GetSql(); sql != "SELECT * FROM `users` CROSS JOIN `roles`" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
 func TestWhereExists(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)

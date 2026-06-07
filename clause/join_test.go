@@ -46,6 +46,34 @@ func TestJoinClauseParsingPG(t *testing.T) {
 	}
 }
 
+func TestCrossJoinClauseParsing(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	join := CrossJoin{
+		SecondTable: "orders",
+	}
+
+	stmt := join.Parse(dialect)
+	expected := "CROSS JOIN `orders`"
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
+func TestCrossJoinClauseParsingPG(t *testing.T) {
+	dialect := dialect.NewPostgres()
+	join := CrossJoin{
+		SecondTable: "orders",
+	}
+
+	stmt := join.Parse(dialect)
+	expected := "CROSS JOIN \"orders\""
+
+	if stmt != expected {
+		t.Errorf("Expected: %s, but got: %s", expected, stmt)
+	}
+}
+
 func TestStatementWithJoin(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	statement := Select{
