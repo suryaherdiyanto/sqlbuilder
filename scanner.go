@@ -125,6 +125,8 @@ func ScanMap(d interface{}, rows *sql.Rows) error {
 			reflect.ValueOf(d).Elem().SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(value.Interface().(bool)))
 		case reflect.Invalid:
 			reflect.ValueOf(d).Elem().SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(""))
+		case reflect.String:
+			reflect.ValueOf(d).Elem().SetMapIndex(reflect.ValueOf(column), reflect.ValueOf(value.Interface().(string)))
 		default:
 			if value.Elem().Kind() != reflect.Slice {
 				if value.Elem().Type().Name() == "Time" {
