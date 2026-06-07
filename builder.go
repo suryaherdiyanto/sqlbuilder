@@ -437,10 +437,9 @@ func (s *SQLBuilder) Offset(n int64) *SQLBuilder {
 	return s
 }
 
-func (s *SQLBuilder) Raw(statement string, args ...any) *SQLBuilder {
-	s.rawStatement = statement
+func (s *SQLBuilder) Raw(statement string, args ...any) string {
 	s.Values = append(s.Values, args...)
-	return s
+	return statement
 }
 
 func (b *SQLBuilder) Get(d any) error {
@@ -460,6 +459,14 @@ func (b *SQLBuilder) Get(d any) error {
 	if ref.Kind() == reflect.Struct {
 		if rows.Next() {
 			if err = ScanStruct(d, rows); err != nil {
+				return err
+			}
+		}
+	}
+
+	if ref.Kind() == reflect.Map {
+		if rows.Next() {
+			if err = ScanMap(d, rows); err != nil {
 				return err
 			}
 		}
@@ -489,6 +496,14 @@ func (b *SQLBuilder) GetContext(d any, ctx context.Context) error {
 	if ref.Kind() == reflect.Struct {
 		if rows.Next() {
 			if err = ScanStruct(d, rows); err != nil {
+				return err
+			}
+		}
+	}
+
+	if ref.Kind() == reflect.Map {
+		if rows.Next() {
+			if err = ScanMap(d, rows); err != nil {
 				return err
 			}
 		}
