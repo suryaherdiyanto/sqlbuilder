@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"testing"
@@ -1016,18 +1017,19 @@ func TestRawStatement(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var users []User
+	var userCount int64
 	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, dba)
 
-	err = builder.Raw("SELECT * FROM users WHERE age > ?", 30).Get(&users)
+	err = builder.Table("users").Select(builder.Raw("COUNT(*) as total")).Scan(&userCount)
+	fmt.Printf("User Count: %v\n", userCount)
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	if len(users) != 4 {
-		t.Errorf("Expected return %d of users, but got %d", 4, len(users))
+	if userCount != 10 {
+		t.Errorf("Expected return %d of users, but got %d", 10, userCount)
 	}
 }
 
