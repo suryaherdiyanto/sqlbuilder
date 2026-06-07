@@ -123,6 +123,17 @@ func TestBuilder(t *testing.T) {
 
 }
 
+func TestSelectAll(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+
+	builder.Table("users").Where("email", clause.OperatorEqual, "johndoe@example.com")
+
+	if sql := builder.GetSql(); sql != "SELECT * FROM `users` WHERE `email` = ?" {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
 func TestWithWhere(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
@@ -1257,5 +1268,83 @@ func TestStatementShouldIgnoreTheOrderOfClauses(t *testing.T) {
 
 	if sql := builder.GetSql(); sql != "SELECT * FROM `users` INNER JOIN `roles` ON `roles`.`user_id` = `users`.`id` WHERE `email` = ? AND `age` > ? LIMIT ?" {
 		t.Fatalf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
+func TestExecuteAggregateCount(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = seed(dba)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, dba)
+
+	count, err := builder.Table("users").Where("age", clause.OperatorGreaterThan, 30).Count()
+
+	if err != nil {
+		sql := builder.GetSql()
+		t.Error(err)
+		t.Errorf("Query: %s", sql)
+	}
+
+	if count != 4 {
+		t.Errorf("Expected count to be %d, but got: %d", 4, count)
+	}
+}
+
+func TestExecuteAggregates(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = seed(dba)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, dba)
+
+	sum, err := builder.Table("users").Where("age", clause.OperatorGreaterThan, 30).Sum("age")
+	if err != nil {
+		t.Fatalf("sum query failed: %v, sql: %s", err, builder.GetSql())
+	}
+
+	avg, err := builder.Table("users").Where("age", clause.OperatorGreaterThan, 30).Avg("age")
+	if err != nil {
+		t.Fatalf("avg query failed: %v, sql: %s", err, builder.GetSql())
+	}
+
+	min, err := builder.Table("users").Where("age", clause.OperatorGreaterThan, 30).Min("age")
+	if err != nil {
+		t.Fatalf("min query failed: %v, sql: %s", err, builder.GetSql())
+	}
+
+	max, err := builder.Table("users").Where("age", clause.OperatorGreaterThan, 30).Max("age")
+	if err != nil {
+		t.Fatalf("max query failed: %v, sql: %s", err, builder.GetSql())
+	}
+
+	if sum != 136 {
+		t.Errorf("Expected sum to be %d, but got: %v", 136, sum)
+	}
+
+	if avg != 34 {
+		t.Errorf("Expected avg to be %d, but got: %v", 34, avg)
+	}
+
+	if min != 31 {
+		t.Errorf("Expected min to be %d, but got: %v", 31, min)
+	}
+
+	if max != 38 {
+		t.Errorf("Expected max to be %d, but got: %v", 38, max)
 	}
 }
