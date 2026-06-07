@@ -1348,3 +1348,31 @@ func TestExecuteAggregates(t *testing.T) {
 		t.Errorf("Expected max to be %d, but got: %v", 38, max)
 	}
 }
+
+func TestWhenBuilder(t *testing.T) {
+	dba, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, dba)
+
+	builder.Table("users").
+		When(true, func(b Builder) *SQLBuilder {
+			return b.Where("age", clause.OperatorGreaterThan, 30)
+		}).
+		When(false, func(b Builder) *SQLBuilder {
+			return b.Where("age", clause.OperatorLessThan, 30)
+		}).
+		When(true, func(b Builder) *SQLBuilder {
+			return b.Where("email", clause.OperatorLike, "%@example.com")
+		}).
+		When(true, func(b Builder) *SQLBuilder {
+			return b.OrderBy("email", "DESC")
+		})
+
+	if builder.GetSql() != "SELECT * FROM `users` WHERE `age` > ? AND `email` LIKE ? ORDER BY email DESC" {
+		t.Fatalf("Unexpected SQL result, got: %s", builder.GetSql())
+	}
+}

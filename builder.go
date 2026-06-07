@@ -418,7 +418,7 @@ func (s *SQLBuilder) OrderBy(column string, dir clause.OrderDirection) *SQLBuild
 			},
 		},
 	}
-	s.tailClauseStatement = s.tailClauseStatement + " " + order.Parse(s.Dialect)
+	s.tailClauseStatement = s.tailClauseStatement + order.Parse(s.Dialect)
 	return s
 }
 
@@ -448,6 +448,14 @@ func (s *SQLBuilder) Offset(n int64) *SQLBuilder {
 func (s *SQLBuilder) Raw(statement string, args ...any) string {
 	s.Values = append(s.Values, args...)
 	return statement
+}
+
+func (s *SQLBuilder) When(condition bool, builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	if condition {
+		return builder(s)
+	}
+
+	return s
 }
 
 func (b *SQLBuilder) Get(d any) error {
