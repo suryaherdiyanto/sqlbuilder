@@ -23,9 +23,10 @@ const (
 )
 
 const (
-	LeftJoin  JoinType = "left join"
-	RightJoin JoinType = "right join"
-	InnerJoin JoinType = "inner join"
+	LeftJoin      JoinType = "left join"
+	RightJoin     JoinType = "right join"
+	InnerJoin     JoinType = "inner join"
+	CrossJoinType JoinType = "cross join"
 )
 
 const (

@@ -64,6 +64,7 @@ type Builder interface {
 	Join(table string, first string, operator clause.Operator, second string) *SQLBuilder
 	LeftJoin(table string, first string, operator clause.Operator, second string) *SQLBuilder
 	RightJoin(table string, first string, operator clause.Operator, second string) *SQLBuilder
+	CrossJoin(table string) *SQLBuilder
 	OrderBy(column string, dir clause.OrderDirection) *SQLBuilder
 	GroupBy(columns ...string) *SQLBuilder
 	Limit(n int64) *SQLBuilder
@@ -371,6 +372,14 @@ func (s *SQLBuilder) RightJoin(table string, first string, operator clause.Opera
 			Operator:   operator,
 			RightField: second,
 		},
+	}
+	s.joinClauseStatement = s.concatJoinClause(s.joinClauseStatement, join)
+	return s
+}
+
+func (s *SQLBuilder) CrossJoin(table string) *SQLBuilder {
+	join := clause.CrossJoin{
+		SecondTable: table,
 	}
 	s.joinClauseStatement = s.concatJoinClause(s.joinClauseStatement, join)
 	return s
