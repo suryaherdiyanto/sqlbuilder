@@ -185,7 +185,7 @@ func (s *SQLBuilder) Insert(data any) (int64, error) {
 	return lastInsertId, nil
 }
 
-func (s *SQLBuilder) InsertMany(data []map[string]any) *SQLBuilder {
+func (s *SQLBuilder) InsertMany(data []map[string]any) (int64, error) {
 	insertStatement := clause.Insert{
 		Table: s.tempTable,
 		Rows:  data,
@@ -194,7 +194,17 @@ func (s *SQLBuilder) InsertMany(data []map[string]any) *SQLBuilder {
 	s.rawStatement = stmt
 	s.Values = append(s.Values, insert.Values...)
 
-	return s
+	res, err := s.Exec()
+	if err != nil {
+		return 0, err
+	}
+
+	lastInsertId, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return lastInsertId, nil
 }
 
 func (s *SQLBuilder) Update(data any) (sql.Result, error) {
