@@ -197,10 +197,23 @@ func (s *SQLBuilder) InsertMany(data []map[string]any) *SQLBuilder {
 	return s
 }
 
-func (s *SQLBuilder) Update(data map[string]any) (sql.Result, error) {
+func (s *SQLBuilder) Update(data any) (sql.Result, error) {
+	dataMap := map[string]any{}
+	dataType := reflect.TypeOf(data)
+
+	if dataType.Kind() == reflect.Struct {
+		err := toMap(data, &dataMap)
+
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		dataMap = data.(map[string]any)
+	}
+
 	updateStatement := clause.Update{
 		Table: s.tempTable,
-		Rows:  data,
+		Rows:  dataMap,
 	}
 
 	stmt, update := updateStatement.Parse(s.Dialect)
