@@ -9,6 +9,6 @@ type WhereNotBetween struct {
 	Conj  Conjuction
 }
 
-func (w WhereNotBetween) Parse(dialect SQLDialector) string {
-	return fmt.Sprintf("%s%s%s NOT BETWEEN %s AND %s", dialect.GetColumnQuoteLeft(), w.Field, dialect.GetColumnQuoteRight(), dialect.GetDelimiter(), dialect.GetDelimiter())
+func (w WhereNotBetween) Parse(d SQLDialector) string {
+	return fmt.Sprintf("%s%s%s NOT BETWEEN %s AND %s", d.GetColumnQuoteLeft(), w.Field, d.GetColumnQuoteRight(), d.GetDelimiter(), d.GetDelimiter())
 }

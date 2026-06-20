@@ -7,7 +7,7 @@ type Delete struct {
 	Values []any
 }
 
-func (d Delete) Parse(dialect SQLDialector) (string, Delete) {
+func (d Delete) Parse(_ SQLDialector) (string, Delete) {
 	stmt := fmt.Sprintf("DELETE FROM %s", d.Table)
 
 	return stmt, d

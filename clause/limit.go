@@ -6,10 +6,10 @@ type Limit struct {
 	Count int64
 }
 
-func (l Limit) Parse(dialect SQLDialector) string {
+func (l Limit) Parse(d SQLDialector) string {
 	if l.Count == 0 {
 		return ""
 	}
 
-	return fmt.Sprintf("LIMIT %s", dialect.GetDelimiter())
+	return fmt.Sprintf("LIMIT %s", d.GetDelimiter())
 }

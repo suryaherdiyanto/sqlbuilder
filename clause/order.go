@@ -14,7 +14,7 @@ type Order struct {
 	OrderingFields []OrderField
 }
 
-func (o Order) Parse(dialect SQLDialector) string {
+func (o Order) Parse(d SQLDialector) string {
 	if len(o.OrderingFields) == 0 {
 		return ""
 	}

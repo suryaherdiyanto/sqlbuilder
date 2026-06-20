@@ -47,13 +47,13 @@ type SQLDialector interface {
 }
 
 type WhereParser interface {
-	Parse(dialect SQLDialector) string
+	Parse(d SQLDialector) string
 }
 
 type JoinParser interface {
-	Parse(dialect SQLDialector) string
+	Parse(d SQLDialector) string
 }
 
 type TailParser interface {
-	Parse(dialect SQLDialector) string
+	Parse(d SQLDialector) string
 }

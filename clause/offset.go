@@ -6,10 +6,10 @@ type Offset struct {
 	Count int64
 }
 
-func (o Offset) Parse(dialect SQLDialector) string {
+func (o Offset) Parse(d SQLDialector) string {
 	if o.Count == 0 {
 		return ""
 	}
 
-	return fmt.Sprintf(" OFFSET %s", dialect.GetDelimiter())
+	return fmt.Sprintf(" OFFSET %s", d.GetDelimiter())
 }

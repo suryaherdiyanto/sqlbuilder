@@ -12,7 +12,7 @@ type Insert struct {
 	Values []any
 }
 
-func (in Insert) Parse(dialect SQLDialector) (string, Insert) {
+func (in Insert) Parse(d SQLDialector) (string, Insert) {
 	columns := ""
 	keys := []string{}
 
@@ -25,7 +25,7 @@ func (in Insert) Parse(dialect SQLDialector) (string, Insert) {
 		slices.Sort(keys)
 
 		for _, k := range keys {
-			columns += fmt.Sprintf("%s%s%s,", dialect.GetColumnQuoteLeft(), k, dialect.GetColumnQuoteRight())
+			columns += fmt.Sprintf("%s%s%s,", d.GetColumnQuoteLeft(), k, d.GetColumnQuoteRight())
 		}
 	}
 
@@ -35,7 +35,7 @@ func (in Insert) Parse(dialect SQLDialector) (string, Insert) {
 	for i := range len(in.Rows) {
 		rowValues := ""
 		for idx := range keys {
-			rowValues += dialect.GetDelimiter()
+			rowValues += d.GetDelimiter()
 			if idx < len(keys)-1 {
 				rowValues += ","
 			}

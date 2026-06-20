@@ -9,21 +9,21 @@ type WhereIn struct {
 	SubStatement SubStatement
 }
 
-func (wi WhereIn) Parse(dialect SQLDialector) string {
+func (wi WhereIn) Parse(d SQLDialector) string {
 	if wi.SubStatement.Table != "" {
-		subStmt, _ := wi.SubStatement.Select.Parse(dialect)
-		return fmt.Sprintf("%s%s%s IN (%s)", dialect.GetColumnQuoteLeft(), wi.Field, dialect.GetColumnQuoteRight(), subStmt)
+		subStmt, _ := wi.SubStatement.Select.Parse(d)
+		return fmt.Sprintf("%s%s%s IN (%s)", d.GetColumnQuoteLeft(), wi.Field, d.GetColumnQuoteRight(), subStmt)
 
 	}
 	inValues := ""
 
 	for i := range wi.Values {
-		inValues += dialect.GetDelimiter()
+		inValues += d.GetDelimiter()
 
 		if i < len(wi.Values)-1 {
 			inValues += ","
 		}
 	}
 
-	return fmt.Sprintf("%s%s%s IN(%s)", dialect.GetColumnQuoteLeft(), wi.Field, dialect.GetColumnQuoteRight(), inValues)
+	return fmt.Sprintf("%s%s%s IN(%s)", d.GetColumnQuoteLeft(), wi.Field, d.GetColumnQuoteRight(), inValues)
 }

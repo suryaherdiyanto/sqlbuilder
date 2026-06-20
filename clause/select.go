@@ -14,7 +14,7 @@ type Select struct {
 	Values  []any
 }
 
-func (s Select) Parse(dialect SQLDialector) (string, Select) {
+func (s Select) Parse(d SQLDialector) (string, Select) {
 	stmt := `SELECT %s FROM %s`
 
 	columns := []string{}
@@ -24,7 +24,7 @@ func (s Select) Parse(dialect SQLDialector) (string, Select) {
 			continue
 		}
 
-		columns = append(columns, pkg.ColumnSplitter(col, dialect.GetColumnQuoteLeft(), dialect.GetColumnQuoteRight()))
+		columns = append(columns, pkg.ColumnSplitter(col, d.GetColumnQuoteLeft(), d.GetColumnQuoteRight()))
 	}
 
 	fields := strings.Join(columns, ",")

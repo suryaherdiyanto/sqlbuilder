@@ -9,21 +9,21 @@ type WhereNotIn struct {
 	SubStatement Select
 }
 
-func (wi WhereNotIn) Parse(dialect SQLDialector) string {
+func (wi WhereNotIn) Parse(d SQLDialector) string {
 	if wi.SubStatement.Table != "" {
-		subStmt, _ := wi.SubStatement.Parse(dialect)
-		return fmt.Sprintf("%s%s%s NOT IN (%s)", dialect.GetColumnQuoteLeft(), wi.Field, dialect.GetColumnQuoteRight(), subStmt)
+		subStmt, _ := wi.SubStatement.Parse(d)
+		return fmt.Sprintf("%s%s%s NOT IN (%s)", d.GetColumnQuoteLeft(), wi.Field, d.GetColumnQuoteRight(), subStmt)
 
 	}
 	inValues := ""
 
 	for i := range wi.Values {
-		inValues += dialect.GetDelimiter()
+		inValues += d.GetDelimiter()
 
 		if i < len(wi.Values)-1 {
 			inValues += ","
 		}
 	}
 
-	return fmt.Sprintf("%s%s%s NOT IN(%s)", dialect.GetColumnQuoteLeft(), wi.Field, dialect.GetColumnQuoteRight(), inValues)
+	return fmt.Sprintf("%s%s%s NOT IN(%s)", d.GetColumnQuoteLeft(), wi.Field, d.GetColumnQuoteRight(), inValues)
 }

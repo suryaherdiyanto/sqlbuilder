@@ -9,6 +9,6 @@ type WhereBetween struct {
 	Conj  Conjuction
 }
 
-func (w WhereBetween) Parse(dialect SQLDialector) string {
-	return fmt.Sprintf("%s%s%s BETWEEN %s AND %s", dialect.GetColumnQuoteLeft(), w.Field, dialect.GetColumnQuoteRight(), dialect.GetDelimiter(), dialect.GetDelimiter())
+func (w WhereBetween) Parse(d SQLDialector) string {
+	return fmt.Sprintf("%s%s%s BETWEEN %s AND %s", d.GetColumnQuoteLeft(), w.Field, d.GetColumnQuoteRight(), d.GetDelimiter(), d.GetDelimiter())
 }
