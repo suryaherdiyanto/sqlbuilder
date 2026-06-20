@@ -770,7 +770,7 @@ func TestInsertMultipleRows(t *testing.T) {
 			"email":    "johndoe@example.com",
 			"age":      20,
 		},
-	}).Exec()
+	})
 
 	if err != nil {
 		t.Fatal(err)
