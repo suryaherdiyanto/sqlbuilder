@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"github.com/suryaherdiyanto/sqlbuilder/dialect"
 )
 
 type Update struct {
@@ -12,7 +14,7 @@ type Update struct {
 	Values []any
 }
 
-func (u Update) Parse(dialect SQLDialector) (string, Update) {
+func (u Update) Parse(d SQLDialector, i int) (string, Update) {
 	stmt := fmt.Sprintf("UPDATE %s SET ", u.Table)
 	keys := make([]string, 0, len(u.Rows))
 
@@ -21,8 +23,13 @@ func (u Update) Parse(dialect SQLDialector) (string, Update) {
 	}
 	slices.Sort(keys)
 
-	for _, k := range keys {
-		stmt += fmt.Sprintf("%s%s%s = %s, ", dialect.GetColumnQuoteLeft(), k, dialect.GetColumnQuoteRight(), dialect.GetDelimiter())
+	for j, k := range keys {
+		delimiter := d.GetDelimiter()
+		if d.GetName() == dialect.PostgreSQL {
+			delimiter = fmt.Sprintf("$%d", i+j)
+		}
+
+		stmt += fmt.Sprintf("%s%s%s = %s, ", d.GetColumnQuoteLeft(), k, d.GetColumnQuoteRight(), delimiter)
 		if val, ok := u.Rows[k]; ok {
 			u.Values = append(u.Values, val)
 		}

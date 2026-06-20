@@ -217,7 +217,7 @@ func (s *SQLBuilder) Update(data any) (sql.Result, error) {
 	}
 
 	s.rawStatement = s.whereClauseStatement
-	stmt, update := updateStatement.Parse(s.Dialect)
+	stmt, update := updateStatement.Parse(s.Dialect, len(s.Values))
 	s.rawStatement = stmt + " " + s.rawStatement
 
 	updateValues := update.Values
