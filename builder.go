@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/suryaherdiyanto/sqlbuilder/clause"
+	"github.com/suryaherdiyanto/sqlbuilder/dialect"
 	"github.com/suryaherdiyanto/sqlbuilder/pkg"
 )
 
@@ -221,7 +222,11 @@ func (s *SQLBuilder) Update(data any) (sql.Result, error) {
 	s.rawStatement = stmt + " " + s.rawStatement
 
 	updateValues := update.Values
-	s.Values = append(updateValues, s.Values...)
+	if s.Dialect.GetName() == dialect.PostgreSQL {
+		s.Values = append(s.Values, updateValues...)
+	} else {
+		s.Values = append(updateValues, s.Values...) // for MySQL and SQLite, update values should be placed before where clause values
+	}
 
 	return s.Exec()
 }
