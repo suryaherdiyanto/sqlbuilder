@@ -216,8 +216,9 @@ func (s *SQLBuilder) Update(data any) (sql.Result, error) {
 		Rows:  dataMap,
 	}
 
+	s.rawStatement = s.whereClauseStatement
 	stmt, update := updateStatement.Parse(s.Dialect)
-	s.rawStatement = stmt + s.rawStatement
+	s.rawStatement = stmt + " " + s.rawStatement
 
 	updateValues := update.Values
 	s.Values = append(updateValues, s.Values...)
@@ -230,8 +231,9 @@ func (s *SQLBuilder) Delete() (sql.Result, error) {
 		Table: s.tempTable,
 	}
 
+	s.rawStatement = s.whereClauseStatement
 	stmt, _ := deleteStatement.Parse(s.Dialect)
-	s.rawStatement = stmt + s.rawStatement
+	s.rawStatement = stmt + " " + s.rawStatement
 
 	return s.Exec()
 }
@@ -634,10 +636,6 @@ func (b *SQLBuilder) Scan(d interface{}) error {
 func (s *SQLBuilder) Exec() (sql.Result, error) {
 	statement := s.GetSql()
 	arguments := s.GetArguments()
-
-	if s.rawStatement != "" {
-		s.rawStatement = ""
-	}
 
 	startedAt := time.Now()
 	defer s.logQuery(statement, arguments, startedAt)

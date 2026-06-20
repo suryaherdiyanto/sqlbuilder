@@ -808,9 +808,15 @@ func TestExecuteUpdateStatement(t *testing.T) {
 		"age":      36,
 	})
 
-	if sql := builder.GetSql(); err != nil {
-		t.Errorf("Unexpected SQL result, got: %s", sql)
+	sqlStatement := builder.GetSql()
+	expectedSql := "UPDATE `users` SET `age` = ?, `username` = ? WHERE `id` = ?"
+
+	if err != nil {
 		t.Fatal(err)
+	}
+
+	if sqlStatement != expectedSql {
+		t.Fatalf("Unexpected SQL result, got: %s", sqlStatement)
 	}
 
 	if rowsAffected, err := result.RowsAffected(); err != nil {
@@ -854,9 +860,16 @@ func TestExecuteDeleteStatement(t *testing.T) {
 	builder = New(dialect, dba)
 	result, err := builder.Table("users").Where("username", clause.OperatorEqual, "johndoe").Delete()
 
+	rawSql := builder.GetSql()
+	expectedSql := "DELETE FROM `users` WHERE `username` = ?"
+
 	if err != nil {
-		t.Errorf("SQL: %s", builder.GetSql())
+		t.Errorf("SQL: %s", rawSql)
 		t.Fatal(err)
+	}
+
+	if rawSql != expectedSql {
+		t.Fatalf("Unexpected SQL, got %s", rawSql)
 	}
 
 	if rowsAffected, err := result.RowsAffected(); err != nil {
