@@ -6,6 +6,10 @@ type PostgresDialect struct {
 	placeholderIndex int
 }
 
+func (p *PostgresDialect) Reset() {
+	p.placeholderIndex = 0
+}
+
 func (p *PostgresDialect) nextPlaceholder() string {
 	p.placeholderIndex++
 	return fmt.Sprintf("$%d", p.placeholderIndex)

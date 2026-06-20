@@ -158,6 +158,29 @@ func TestWithMultipleWhere(t *testing.T) {
 	}
 }
 
+func TestPostgresPlaceholderResetOnReuse(t *testing.T) {
+	postgres := dialect.NewPostgres()
+	firstBuilder := New(postgres, db)
+	firstBuilder.Table("users").Where("email", clause.OperatorEqual, "johndoe@example.com")
+
+	if sql := firstBuilder.GetSql(); sql != "SELECT * FROM \"users\" WHERE \"email\" = $1" {
+		t.Fatalf("unexpected first SQL result, got: %s", sql)
+	}
+
+	secondBuilder := New(postgres, db)
+	secondBuilder.Table("users").Where("id", clause.OperatorEqual, 1)
+
+	if sql := secondBuilder.GetSql(); sql != "SELECT * FROM \"users\" WHERE \"id\" = $1" {
+		t.Fatalf("unexpected second SQL result, got: %s", sql)
+	}
+
+	secondBuilder.Table("users").Where("age", clause.OperatorGreaterThan, 18)
+
+	if sql := secondBuilder.GetSql(); sql != "SELECT * FROM \"users\" WHERE \"age\" > $1" {
+		t.Fatalf("unexpected reused builder SQL result, got: %s", sql)
+	}
+}
+
 func TestWhereIn(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)

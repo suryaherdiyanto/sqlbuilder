@@ -38,6 +38,10 @@ type queryLogger interface {
 
 type Option func(*SQLBuilder)
 
+type dialectStateResetter interface {
+	Reset()
+}
+
 type Builder interface {
 	Select(columns ...string) *SQLBuilder
 	Table(table string) *SQLBuilder
@@ -84,6 +88,8 @@ func New(dialect clause.SQLDialector, db *sql.DB, opts ...Option) *SQLBuilder {
 	for _, opt := range opts {
 		opt(builder)
 	}
+
+	builder.resetDialectState()
 
 	return builder
 }
@@ -673,6 +679,16 @@ func (s *SQLBuilder) clearStatement() {
 	s.whereClauseStatement = ""
 	s.lockClauseStatement = ""
 	s.tailClauseStatement = ""
+	s.resetDialectState()
+}
+
+func (s *SQLBuilder) resetDialectState() {
+	resetter, ok := s.Dialect.(dialectStateResetter)
+	if !ok {
+		return
+	}
+
+	resetter.Reset()
 }
 
 func (s *SQLBuilder) concatWhereClause(statement string, conj clause.Conjuction, where clause.WhereParser) string {
