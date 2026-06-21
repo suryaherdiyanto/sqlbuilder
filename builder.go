@@ -468,6 +468,7 @@ func (s *SQLBuilder) Offset(n int64) *SQLBuilder {
 		Count: n,
 	}
 	s.tailClauseStatement = s.concatTailClause(s.tailClauseStatement, offset)
+	s.Values = append(s.Values, n)
 	return s
 }
 
