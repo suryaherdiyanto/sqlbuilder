@@ -470,7 +470,9 @@ func (s *SQLBuilder) Limit(n int64) *SQLBuilder {
 		Count: n,
 	}
 	s.tailClauseStatement = s.concatTailClause(s.tailClauseStatement, limit)
-	s.Values = append(s.Values, n)
+	if limit.Count != 0 {
+		s.Values = append(s.Values, n)
+	}
 	return s
 }
 func (s *SQLBuilder) Offset(n int64) *SQLBuilder {
@@ -478,7 +480,9 @@ func (s *SQLBuilder) Offset(n int64) *SQLBuilder {
 		Count: n,
 	}
 	s.tailClauseStatement = s.concatTailClause(s.tailClauseStatement, offset)
-	s.Values = append(s.Values, n)
+	if offset.Count != 0 {
+		s.Values = append(s.Values, n)
+	}
 	return s
 }
 
