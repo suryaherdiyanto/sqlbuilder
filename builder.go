@@ -47,6 +47,8 @@ type Builder interface {
 	Table(table string) *SQLBuilder
 	Where(field string, Op clause.Operator, val any) *SQLBuilder
 	OrWhere(field string, Op clause.Operator, val any) *SQLBuilder
+	WhereGroup(builder func(b Builder) *SQLBuilder) *SQLBuilder
+	OrWhereGroup(builder func(b Builder) *SQLBuilder) *SQLBuilder
 	WhereIn(field string, values []any) *SQLBuilder
 	OrWhereIn(field string, values []any) *SQLBuilder
 	WhereNotIn(field string, values []any) *SQLBuilder
@@ -301,6 +303,14 @@ func (s *SQLBuilder) Where(field string, Op clause.Operator, val any) *SQLBuilde
 
 func (s *SQLBuilder) OrWhere(field string, Op clause.Operator, val any) *SQLBuilder {
 	return s.addWhere(field, Op, val, clause.ConjuctionOr)
+}
+
+func (s *SQLBuilder) WhereGroup(builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	return s.addWhereGroup(clause.ConjuctionAnd, builder)
+}
+
+func (s *SQLBuilder) OrWhereGroup(builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	return s.addWhereGroup(clause.ConjuctionOr, builder)
 }
 
 func (s *SQLBuilder) WhereIn(field string, values []any) *SQLBuilder {
@@ -703,6 +713,19 @@ func (s *SQLBuilder) concatWhereClause(statement string, conj clause.Conjuction,
 	return stmt
 }
 
+func (s *SQLBuilder) concatWhereGroup(statement string, conj clause.Conjuction, group string) string {
+	if group == "" {
+		return statement
+	}
+
+	stmt := statement
+	if strings.Contains(stmt, "WHERE") {
+		return stmt + " " + string(conj) + " (" + group + ")"
+	}
+
+	return stmt + "WHERE (" + group + ")"
+}
+
 func (s *SQLBuilder) concatWhereWithSubquery(statement string, w clause.Where, subquery string) string {
 	stmt := statement
 	field := w.GetField(s.Dialect)
@@ -853,8 +876,22 @@ func (s *SQLBuilder) addWhereDay(field string, operator clause.Operator, value a
 	return s
 }
 
+func (s *SQLBuilder) addWhereGroup(conj clause.Conjuction, builder func(b Builder) *SQLBuilder) *SQLBuilder {
+	newBuilder := s.newNestedBuilder()
+	newBuilder = builder(newBuilder)
+
+	groupStatement := strings.TrimSpace(strings.TrimPrefix(newBuilder.whereClauseStatement, "WHERE "))
+	if groupStatement == "" {
+		return s
+	}
+
+	s.Values = append(s.Values, newBuilder.Values...)
+	s.whereClauseStatement = s.concatWhereGroup(s.whereClauseStatement, conj, groupStatement)
+	return s
+}
+
 func (s *SQLBuilder) addWhereFunc(field string, operator clause.Operator, conj clause.Conjuction, builder func(b Builder) *SQLBuilder) *SQLBuilder {
-	newBuilder := builder(New(s.Dialect, s.sql))
+	newBuilder := builder(s.newNestedBuilder())
 	where := clause.Where{
 		Field: field,
 		Op:    operator,
@@ -868,7 +905,7 @@ func (s *SQLBuilder) addWhereFunc(field string, operator clause.Operator, conj c
 }
 
 func (s *SQLBuilder) addWhereExists(conj clause.Conjuction, builder func(b Builder) *SQLBuilder) *SQLBuilder {
-	newBuilder := builder(New(s.Dialect, s.sql))
+	newBuilder := builder(s.newNestedBuilder())
 
 	childStmt := newBuilder.GetSql()
 	where := clause.Where{
@@ -880,6 +917,17 @@ func (s *SQLBuilder) addWhereExists(conj clause.Conjuction, builder func(b Build
 	s.whereClauseStatement = s.concatWhereWithSubquery(s.whereClauseStatement, where, childStmt)
 
 	return s
+}
+
+func (s *SQLBuilder) newNestedBuilder() *SQLBuilder {
+	return &SQLBuilder{
+		Dialect:       s.Dialect,
+		sql:           s.sql,
+		tx:            s.tx,
+		isTx:          s.isTx,
+		enableLogging: s.enableLogging,
+		logger:        s.logger,
+	}
 }
 
 func (s *SQLBuilder) runQuery(ctx context.Context) (*sql.Rows, error) {

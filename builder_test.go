@@ -273,6 +273,51 @@ func TestOrWhere(t *testing.T) {
 	}
 }
 
+func TestWhereGroup(t *testing.T) {
+	dialect := dialect.New("?", "`", "`")
+	builder = New(dialect, db)
+	builder.Table("users").Select("*")
+
+	builder.
+		Where("vendor_id", clause.OperatorEqual, 1).
+		WhereGroup(func(b Builder) *SQLBuilder {
+			return b.Where("status", clause.OperatorEqual, 1).
+				OrWhere("name", clause.OperatorLike, "%john%")
+		})
+
+	expected := "SELECT * FROM `users` WHERE `vendor_id` = ? AND (`status` = ? OR `name` LIKE ?)"
+	if sql := builder.GetSql(); sql != expected {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+
+	arguments := builder.GetArguments()
+	if len(arguments) != 3 {
+		t.Fatalf("Unexpected argument count, got: %d", len(arguments))
+	}
+
+	if arguments[0] != 1 || arguments[1] != 1 || arguments[2] != "%john%" {
+		t.Fatalf("Unexpected arguments, got: %#v", arguments)
+	}
+}
+
+func TestWhereGroupPostgresPlaceholders(t *testing.T) {
+	postgres := dialect.NewPostgres()
+	builder = New(postgres, db)
+	builder.Table("users").Select("*")
+
+	builder.
+		Where("vendor_id", clause.OperatorEqual, 1).
+		WhereGroup(func(b Builder) *SQLBuilder {
+			return b.Where("status", clause.OperatorEqual, 1).
+				OrWhere("name", clause.OperatorLike, "%john%")
+		})
+
+	expected := "SELECT * FROM \"users\" WHERE \"vendor_id\" = $1 AND (\"status\" = $2 OR \"name\" LIKE $3)"
+	if sql := builder.GetSql(); sql != expected {
+		t.Errorf("Unexpected SQL result, got: %s", sql)
+	}
+}
+
 func TestJoin(t *testing.T) {
 	dialect := dialect.New("?", "`", "`")
 	builder = New(dialect, db)
